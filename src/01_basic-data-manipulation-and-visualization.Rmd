@@ -1,5 +1,5 @@
 ---
-title: "Basic data manipulation and visualization"
+title: "Day 1: Basic data manipulation and visualization"
 author: "Nayef Ahmad - VCH Decision Support"
 date: "September 14, 2018"
 output: 
@@ -10,6 +10,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+library("kableExtra")
+
 
 # shortcuts: 
 # > ctrl + alt + i ==> new code chunk
@@ -18,4 +20,84 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-# Why are we talking about R/Python? 
+## Why are we talking about R/Python? 
+* It's the industry standard...
+* ... for good reason 
+
+\  
+
+Ok, let's get started 
+
+*********
+
+
+## Setup
+1. Create a folder where you'll save project files. I recommend following a folder structure similar to the one mentioned [here](https://swcarpentry.github.io/r-novice-gapminder/02-project-intro/) 
+2. Open RStudio, create a new project, save it in the root folder. 
+3. Open a new R script. Now let's get started with the code! 
+
+\  
+\  
+\  
+
+## Install the packages you need
+You will only need to do this once. I recommend running these lines in the console instead of the script editor. 
+
+```{r eval = FALSE}
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("here")
+
+
+```
+
+## Load the packages for the current session
+```{r message = FALSE}
+library("dplyr")  # for manipulating data frames 
+library("ggplot2")  # for data viz
+library("here")  # for simplifying folder references 
+
+
+```
+
+*******************
+
+\  
+\  
+\  
+
+## Built-in datasets
+R comes with some built-in datasets. Let's start by taking a look at them. 
+
+### mtcars dataset 
+```{r}
+mtcars %>% kable()
+
+```
+
+### Summary functions: 
+These functions are good for getting a quick sense of a dataset. 
+
+```{r}
+str(mtcars)
+```
+
+```{r}
+summary(mtcars)
+```
+
+```{r}
+head(mtcars)  # by default shows top 10 rows 
+```
+
+\  
+
+### Mini-exercise
+Try doing the same with the following datasets: iris, airquality, diamonds
+
+\  
+\  
+\  
+
+
+
