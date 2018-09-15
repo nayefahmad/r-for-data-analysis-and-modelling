@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1536973908672.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F89BE9E6",
+    "lastKnownWriteTime" : 1536974174,
+    "last_content_update" : 1536974174972,
+    "path" : "D:/r-for-data-analysis-and-modelling/src/01_basic-data-manipulation-and-visualization.Rmd",
+    "project_path" : "src/01_basic-data-manipulation-and-visualization.Rmd",
+    "properties" : {
+        "cursorPosition" : "20,37",
+        "scrollLine" : "2",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

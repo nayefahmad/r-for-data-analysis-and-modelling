@@ -1,0 +1,21 @@
+---
+title: "Basic data manipulation and visualization"
+author: "Nayef Ahmad - VCH Decision Support"
+date: "September 14, 2018"
+output: 
+    html_document: 
+        toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+# shortcuts: 
+# > ctrl + alt + i ==> new code chunk
+# > ctrl + shift + k ==> knit doc 
+# \  ==> line break (include 2 spaces after)
+```
+
+
+# Why are we talking about R/Python? 
