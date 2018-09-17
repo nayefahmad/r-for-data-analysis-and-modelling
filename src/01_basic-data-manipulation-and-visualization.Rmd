@@ -82,6 +82,8 @@ R comes with some built-in datasets. Let's start by taking a look at a few of th
 ### mtcars dataset 
 ```{r}
 mtcars %>% 
+    
+    # don't use the following lines; they're specifically for Rmarkdown files
     kable() %>% 
     kable_styling(bootstrap_options = c("striped",
                                         "condensed", 
@@ -158,10 +160,12 @@ df1.mtcars.modified <- mtcars %>%
     # "x <- 10" means "save the number 10 with object name x"
     # "%>%" translates as "then". That is, first do x %>% do y
     
+    # select certain COLUMNS
     select(cyl, 
            mpg, 
            disp) %>% 
     
+    # filter out certain ROWS
     filter(mpg <= 30) %>%  # let's say these are outliers 
     
     rename(cylinders = cyl, 
@@ -237,7 +241,7 @@ p1.overall.mean <- df2.mtcars.original %>%
     # let's add in the kpl column again: 
     mutate(kpl = (1.609*mpg)/3.785) %>%
     
-    # let's recode cyl as a discrete variable: 
+    # let's recode cyl as a discrete variable (aka "factor"): 
     mutate(cyl = factor(cyl, 
                         levels = c(4, 6, 8))) %>% 
     
@@ -245,11 +249,9 @@ p1.overall.mean <- df2.mtcars.original %>%
     ggplot(aes(x = disp,  # specify x and y axis
                y = kpl)) + 
     
+    # geom_point creates a scatterpolot
     geom_point(aes(colour = cyl, 
                    size = hp)) + 
-    
-    # examine three different ways of summarizing behaviour within
-    # each level of cyl: 
     
     # overall mean: 
     stat_smooth(method = "lm", 
@@ -379,6 +381,8 @@ p5.box <- df2.mtcars.original %>%
     
     geom_boxplot() + 
     
+    # by default, boxplot shows only median, not mean
+    # we'll add in the mean here: 
     stat_summary(fun.y = mean, 
                  geom = "point", 
                  colour = "firebrick") + 
