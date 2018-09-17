@@ -21,8 +21,14 @@ library("kableExtra")
 
 
 ## Why are we talking about R/Python? 
-* It's the industry standard...
-* ... for good reason 
+
+#### It's the industry standard...
+
+* todo: point1 
+
+#### ...for good reason 
+
+* todo: point 1
 
 \  
 
@@ -31,7 +37,7 @@ Ok, let's get started
 *********
 
 
-## Setup
+## Set up your project
 1. Create a folder where you'll save project files. I recommend following a folder structure similar to the one mentioned [here](https://swcarpentry.github.io/r-novice-gapminder/02-project-intro/) 
 2. Open RStudio, create a new project, save it in the root folder. 
 3. Open a new R script. Now let's get started with the code! 
@@ -47,7 +53,9 @@ You will only need to do this once. I recommend running these lines in the conso
 install.packages("dplyr")
 install.packages("ggplot2")
 install.packages("here")
-
+install.packages("readr")
+install.packages("GGally")
+install.packages("gapminder")
 
 ```
 
@@ -56,7 +64,9 @@ install.packages("here")
 library("dplyr")  # for manipulating data frames 
 library("ggplot2")  # for data viz
 library("here")  # for simplifying folder references 
-
+library("readr")  # reading and writing data files 
+library("GGally")  # extension to ggplot2
+library("gapminder")  # gapminder dataset
 
 ```
 
@@ -67,11 +77,17 @@ library("here")  # for simplifying folder references
 \  
 
 ## Built-in datasets
-R comes with some built-in datasets. Let's start by taking a look at them. 
+R comes with some built-in datasets. Let's start by taking a look at a few of them. 
 
 ### mtcars dataset 
 ```{r}
-mtcars %>% kable()
+mtcars %>% 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
 
 ```
 
@@ -92,12 +108,416 @@ head(mtcars)  # by default shows top 10 rows
 
 \  
 
-### Mini-exercise
-Try doing the same with the following datasets: iris, airquality, diamonds
+### Mini-exercise 1
+Try doing the same with the following datasets: 
+
+* iris
+* airquality
+* diamonds
+
+******************************
 
 \  
 \  
 \  
 
+## Outputting data from R 
+We're going to save mtcars as a csv file somewhere in our project folder. Note that with the here( ) package, we don't have to specify a full file path - just a path relative to the project root. This means you can copy the whole project to another location on your computer, or a completely different computer, and all file references should still work. 
+
+```{r}
+# Where is the root folder right now? 
+here()  # result will be different for everyone 
+
+```
+
+```{r}
+# save to the sub-folder "results" >> "output from src"
+write_csv(cbind(rownames(mtcars), mtcars),    # save WHAT?
+          here("results",                     # save WHERE?    
+               "output from src",      
+               "mtcars-original.csv"))
+
+```
+
+**************************
+
+\  
+\  
+\  
+
+## Side-by-side analysis in R and Excel
+Take at look at [the basic data manipulation vocabulary](https://dplyr.tidyverse.org/)
+
+We're going to do the same steps in R and Excel. Note that once you do the steps in R, you will never have to do them again - your work is "conserved". When the data changes, you don't have to do the work all over again, just run the code, and it will repeat all the steps you specified. The same is not true in Excel. 
+
+This may seem trivial when you're thinking of doing analysis one file at a time in a "manual" fashion. However, to multiply the productivity and effectiveness of a data science team, it is necessary to automate these tasks so that they can be performed on dozens or even hundreds of files simultaneously without human intervention. 
+
+```{r}
+df1.mtcars.modified <- mtcars %>% 
+    # Notes on notation: 
+    # "x <- 10" means "save the number 10 with object name x"
+    # "%>%" translates as "then". That is, first do x %>% do y
+    
+    select(cyl, 
+           mpg, 
+           disp) %>% 
+    
+    filter(mpg <= 30) %>%  # let's say these are outliers 
+    
+    rename(cylinders = cyl, 
+           miles.per.gallon = mpg, 
+           displacement = disp) %>% 
+    
+    # let's say one of the entries of mpg was a known data error: 
+    mutate(miles.per.gallon = case_when(
+        miles.per.gallon == 15 ~ 15.5,  # "~" is like the "then" statement in SQL
+        TRUE ~ miles.per.gallon
+        )) %>% 
+    
+    # Wait, what kind of savages use units like miles and gallons? 
+    # let's create a new column with proper civilized units: 
+    mutate(kilometres.per.litre = (1.609*miles.per.gallon)/3.785) %>% 
+    group_by(cylinders) %>% 
+    
+    summarise(avg.kpl = mean(kilometres.per.litre) %>% round(1), 
+              avg.disp = mean(displacement) %>% round(1))
+    
+
+```
+
+```{r}
+# show the output
+df1.mtcars.modified %>% 
+    kable %>%  # use this to print 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+```
+
+\  
+\  
+\  
+
+## Output the modified dataset
+
+```{r}
+write_csv(df1.mtcars.modified, 
+          here("results",
+               "output from src",      
+               "mtcars-summarized.csv"))
+
+```
+
+
+
+## Read in data: 
+Although we already have mtcars built-in, let's practice reading in the csv file we created. 
+
+```{r}
+df2.mtcars.original <- read_csv(here("results",
+                                     "output from src",
+                                     "mtcars-original.csv"))
+```
+
+
+********************************
+
+\  
+\  
+\  
+
+## Data visualization with ggplot
+### Scatterplots: 
+
+```{r}
+p1.overall.mean <- df2.mtcars.original %>% 
+    
+    # let's add in the kpl column again: 
+    mutate(kpl = (1.609*mpg)/3.785) %>%
+    
+    # let's recode cyl as a discrete variable: 
+    mutate(cyl = factor(cyl, 
+                        levels = c(4, 6, 8))) %>% 
+    
+    # now start using gpplot functions: 
+    ggplot(aes(x = disp,  # specify x and y axis
+               y = kpl)) + 
+    
+    geom_point(aes(colour = cyl, 
+                   size = hp)) + 
+    
+    # examine three different ways of summarizing behaviour within
+    # each level of cyl: 
+    
+    # overall mean: 
+    stat_smooth(method = "lm", 
+                formula = y ~ 1) + 
+    
+    theme_classic()
+    
+    
+# print: 
+p1.overall.mean
+    
+
+
+```
+
+```{r}
+p2.group.means <- df2.mtcars.original %>% 
+    
+    # let's add in the kpl column again: 
+    mutate(kpl = (1.609*mpg)/3.785) %>%
+    
+    # let's recode cyl as a discrete variable: 
+    mutate(cyl = factor(cyl, 
+                        levels = c(4, 6, 8))) %>% 
+    
+    # now start using gpplot functions: 
+    ggplot(aes(x = disp,  # specify x and y axis
+               y = kpl)) + 
+    
+    geom_point(aes(colour = cyl, 
+                   size = hp)) + 
+    
+    # examine three different ways of summarizing behaviour within
+    # each level of cyl: 
+    
+    # mean by group: 
+    stat_smooth(aes(group = cyl,
+                    colour = cyl), 
+                method = "lm", 
+                formula = y ~ 1) + 
+    
+    theme_classic()
+    
+# print: 
+p2.group.means
+
+
+```
+
+
+
+```{r}
+p3.group.trends <- df2.mtcars.original %>% 
+    
+    # let's add in the kpl column again: 
+    mutate(kpl = (1.609*mpg)/3.785) %>%
+    
+    # let's recode cyl as a discrete variable: 
+    mutate(cyl = factor(cyl, 
+                        levels = c(4, 6, 8))) %>% 
+    
+    # now start using gpplot functions: 
+    ggplot(aes(x = disp,  # specify x and y axis
+               y = kpl)) + 
+    
+    geom_point(aes(colour = cyl, 
+                   size = hp)) + 
+    
+    # examine three different ways of summarizing behaviour within
+    # each level of cyl: 
+    
+    # mean by group: 
+    stat_smooth(aes(group = cyl,
+                    colour = cyl), 
+                method = "lm") + 
+    
+    theme_classic()
+    
+# print: 
+p3.group.trends
+```
+
+
+```{r}
+p4.overall.trend <- df2.mtcars.original %>% 
+    
+    # let's add in the kpl column again: 
+    mutate(kpl = (1.609*mpg)/3.785) %>%
+    
+    # let's recode cyl as a discrete variable: 
+    mutate(cyl = factor(cyl, 
+                        levels = c(4, 6, 8))) %>% 
+    
+    # now start using gpplot functions: 
+    ggplot(aes(x = disp,  # specify x and y axis
+               y = kpl)) + 
+    
+    geom_point(aes(colour = cyl, 
+                   size = hp)) + 
+    
+    # examine three different ways of summarizing behaviour within
+    # each level of cyl: 
+    
+    # mean by group: 
+    stat_smooth() +  # also try "lm"
+    
+    theme_classic()
+    
+# print: 
+p4.overall.trend
+```
+
+### Boxplot: 
+```{r}
+p5.box <- df2.mtcars.original %>% 
+    
+    # let's add in the kpl column again: 
+    mutate(kpl = (1.609*mpg)/3.785) %>%
+    
+    # let's recode cyl as a discrete variable: 
+    mutate(cyl = factor(cyl, 
+                        levels = c(4, 6, 8))) %>% 
+    
+    # now start using gpplot functions: 
+    ggplot(aes(x = cyl,  # specify x and y axis
+               y = kpl)) + 
+    
+    geom_boxplot() + 
+    
+    stat_summary(fun.y = mean, 
+                 geom = "point", 
+                 colour = "firebrick") + 
+    
+    theme_classic()
+
+# print: 
+p5.box
+```
+
+### Summary of all important variables in the dataset
+```{r}
+p6.pairs <- df2.mtcars.original %>% 
+    select(mpg, 
+           cyl, 
+           hp, 
+           disp) %>% 
+    
+    mutate(cyl = as.factor(cyl)) %>% 
+    
+    ggpairs()
+    
+# print: 
+p6.pairs
+
+```
+
+
+
+## Two ways of saving plots: 
+### Individually with ggsave(): 
+```{r message = FALSE}
+ggsave(here("results", 
+            "output from src", 
+            "data-summary-plot.pdf"), 
+       p6.pairs, 
+       width = 10, 
+       units = "in")
+```
+
+
+### Multiple plots using the pdf() device: 
+
+```{r message = FALSE}
+pdf(here("results", 
+            "output from src", 
+            "all-plots.pdf"), 
+    width = 10)
+
+p1.overall.mean
+p2.group.means
+p3.group.trends
+p4.overall.trend
+p5.box
+p6.pairs
+dev.off()
+
+
+```
+
+\  
+\  
+\  
+
+## Let's talk about models for data 
+Raw data is pretty much useless for decision-making in any complex environment. [Simply “presenting the data” is first, not really possible, and second, not desirable. It’s information overload and rarely allows the audience to make an intelligent conclusion.](https://simplystatistics.org/2018/09/14/divergent-and-convergent-phases-of-data-analysis/)
+
+It is the job of the data analyst to convert the raw data into a form that is useful for decision-making. This means developing models that abstract away from the raw data by doing one of three things: 
+
+1. Summarizing the data 
+2. Making inferences from the data 
+3. Making predictions from the data 
+
+[This is a good summary of the difference between 2 and 3](https://www.coursera.org/lecture/managing-data-analysis/inference-vs-prediction-xKjFf)
+
+We'll be covering several different statistical models in the next few days. For now, I encourage you to think about the models we have already developed here, and how you might develop them further. 
+
+***********************
+
+\   
+\  
+\  
+
+
+## Visualizing the Gapminder dataset
+```{r}
+str(gapminder)
+```
+
+```{r}
+p7.gapminder.pairs <- gapminder %>% 
+    select(-c(country)) %>% 
+    ggpairs()
+
+p7.gapminder.pairs
+
+```
+
+### GDP per capita growth over time
+
+```{r}
+p8.gapminder.gdppercap <- gapminder %>% 
+    ggplot(aes(x=year, 
+               y=gdpPercap)) + 
+    geom_jitter(aes(colour = continent) ,
+                alpha = 0.2) + 
+    stat_smooth(aes(group = continent, 
+                    colour = continent)) + 
+    # scale_y_log10() + 
+    
+    theme_classic()
+
+p8.gapminder.gdppercap
+```
+
+How can we spread out the y-axis to see differences between the three lowest lines? 
+
+```{r}
+p9.gdppercap.log <- p8.gapminder.gdppercap + 
+    scale_y_log10()
+
+p9.gdppercap.log
+```
+
+### Relationship between life expectancy and gdp per capita 
+
+```{r}
+p10.life.gdp <- gapminder %>% 
+    ggplot(aes(x = log(gdpPercap), 
+               y = lifeExp)) + 
+    
+    geom_point(aes(colour = year), 
+               alpha = 0.5) + 
+    
+    facet_wrap(~continent) + 
+    
+    geom_smooth(method = "lm")
+
+p10.life.gdp
+```
 
 
