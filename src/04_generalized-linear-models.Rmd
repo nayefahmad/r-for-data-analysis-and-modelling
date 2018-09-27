@@ -34,3 +34,105 @@ We're now going to move to a more general type of model, which has three compone
 
 Todo: image of link function, etc. 
 
+***********************************
+
+\  
+\  
+\  
+
+## Load the packages for the current session
+```{r message = FALSE}
+library("dplyr")  # for manipulating data frames 
+library("ggplot2")  # for data viz
+library("here")  # for simplifying folder references 
+library("readr")  # reading and writing data files 
+library("GGally")  # extension to ggplot2
+library("ISLR")  # package from the book Intro to Stat Learning 
+
+```
+
+*******************
+
+## Examining the Default dataset
+The default dataset is built into the ISLR package. 
+
+```{r}
+df1.default.dataset <- Default  # rename for convenience 
+
+str(df1.default.dataset)
+
+levels(df1.default.dataset$student)  # No is the first level, 1
+levels(df1.default.dataset$default)  # No is the first level, 1
+
+```
+
+#### Quick summaries 
+```{r}
+summary(df1.default.dataset)
+```
+
+```{r}
+head(df1.default.dataset) %>% 
+    # don't use the following lines; they're specifically for Rmarkdown files
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+```
+
+
+#### Pairs plot 
+
+```{r}
+p1.pairs <- df1.default.dataset %>% 
+    ggpairs(); p1.pairs
+
+
+    
+```
+
+There's a lot of interesting things to see here. 
+
+1. Defaults are a small proportion of total accounts, for both students and non-students. Todo: how different are the proportions? 
+2. Non-students have much higher income than students (no surprise). They also have slightly higher credit balances. 
+3. todo: ...
+
+
+
+
+
+```{r}
+
+df1.default.dataset %>% 
+    group_by(student) %>% 
+    summarize(avg.bal = mean(balance), 
+              avg.inc = mean(income), 
+              num = n())
+
+```
+
+
+## A terrible classifier: just use averages 
+
+```{r}
+
+df1.default.dataset %>% 
+    group_by(default) %>% 
+    summarize(avg.bal = mean(balance), 
+              avg.inc = mean(income), 
+              num.cases = n(), 
+              num.student = sum(student=="Yes"), 
+              perc.student = round(100*sum(student=="Yes")/n(), 2)) %>% 
+    
+    
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+```
+
