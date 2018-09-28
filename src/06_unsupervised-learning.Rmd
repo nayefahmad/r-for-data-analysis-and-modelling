@@ -40,7 +40,9 @@ library("dplyr")
 K-means clustering only works when all variables are numeric. 
 
 
-#### Gower's similarity measure for mixed data 
+## Gower's similarity measure
+
+### Numeric-only data 
 Let's examine the Auto dataset
 
 ```{r}
@@ -71,7 +73,6 @@ head(df1.auto) %>%
 \  
 \  
 
-##### Numeric-only data
 For simplicity, let's focus on a small subset of the data: 
 
 ```{r}
@@ -142,7 +143,9 @@ Same conclusion:
 \  
 \  
 
-##### Mixed numeric/categorical data
+
+### Mixed numeric/categorical data
+
 ```{r}
 set.seed(1)
 df3.auto.subset.cat <- df1.auto %>% 
@@ -189,4 +192,49 @@ m2.gower.dis
 ```
 
 
+\  
+\  
+\  
 
+Let's mess with the data a bit. We'll add a lot of categorical fields that make the fiat and the plymouth similar. Then we'll calculate Gower's dissimilarity again. 
+
+```{r}
+set.seed(1)
+df4.auto.new <- df1.auto %>% 
+    select(name,
+           mpg, 
+           cylinders, 
+           displacement, 
+           origin) %>%  
+    sample_n(3) %>% 
+    mutate(category.var.1 = as.factor(c("yes", 
+                                        "yes", 
+                                        "no")), 
+           category.var.2 = as.factor(c("yes", 
+                                        "yes", 
+                                        "no")), 
+           category.var.3 = as.factor(c("yes", 
+                                        "yes", 
+                                        "no")), 
+           category.var.4 = as.factor(c("yes", 
+                                        "yes", 
+                                        "no")), 
+           category.var.5 = as.factor(c("yes", 
+                                        "yes", 
+                                        "no")))
+
+# add rownames for convenience: 
+rownames(df4.auto.new) <- df4.auto.new %>%
+    pull(name) %>% 
+    substr(1,10)
+
+
+# Calculate Gower's similarity indexes: 
+m3.gower.newdata <- daisy(df4.auto.new, 
+                          metric = "gower")
+
+m3.gower.newdata
+
+
+
+```
