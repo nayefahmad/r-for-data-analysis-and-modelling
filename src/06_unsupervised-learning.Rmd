@@ -1,0 +1,192 @@
+---
+title: 'Day 6: Unsupervised learning'
+author: "Nayef Ahmad - VCH Decision Support"
+date: "September 27, 2018"
+output: 
+    html_document: 
+        toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library("kableExtra")
+
+
+# shortcuts: 
+# > ctrl + alt + i ==> new code chunk
+# > ctrl + shift + k ==> knit doc 
+# \  ==> line break (include 2 spaces after)
+```
+
+
+
+## Install and load the packages you need
+You will only need to do this once. I recommend running these lines in the console instead of the script editor. 
+
+```{r message = FALSE}
+# install.packages("cluster")
+
+library("cluster")
+library("ISLR")
+library("dplyr")
+
+```
+
+
+
+## Clustering mixed data with both numeric and categorical variables
+K-means clustering only works when all variables are numeric. 
+
+
+#### Gower's similarity measure for mixed data 
+Let's examine the Auto dataset
+
+```{r}
+df1.auto <- ISLR::Auto %>% 
+    
+    # recode origin as a factor 
+    mutate(origin = case_when(
+        origin == 1 ~ "American",
+        origin == 2 ~ "European",
+        origin == 3 ~ "Japanese"
+    ) %>% as.factor())
+
+
+str(df1.auto)
+summary(df1.auto)
+head(df1.auto) %>% 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+```
+
+
+\  
+\  
+\  
+
+##### Numeric-only data
+For simplicity, let's focus on a small subset of the data: 
+
+```{r}
+set.seed(3)
+
+df2.auto.subset <- df1.auto %>% 
+    select(name,
+           mpg, 
+           cylinders, 
+           displacement) %>%  
+    sample_n(3)
+
+# print: 
+df2.auto.subset %>% 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+```
+
+\  
+\  
+\  
+
+Now we'll compare Gower's dissimilarity measure with Euclidean distances: 
+
+```{r}
+# create matrix object for convenience: 
+m1.auto.numeric <- select(df2.auto.subset, 
+                              -name) %>% 
+    as.matrix()
+
+rownames(m1.auto.numeric) <- df2.auto.subset %>% pull(name)
+
+m1.euclid.dis <- dist(m1.auto.numeric,
+                       method = "euclidean")
+
+m1.euclid.dis
+# str(m1.euclid.dis)
+
+```
+
+So, in terms of similarity: 
+
+* the plymouth valiant and amc ambassador are most similar
+* the audi is more similar to the plymouth than the amc 
+
+Let's compare this with the results from Gower's dissimilarity: 
+
+```{r}
+library("cluster")
+m1.gower.dis <- daisy(m1.auto.numeric, 
+                      metric = "gower")
+
+m1.gower.dis
+
+```
+
+Same conclusion: 
+
+* the plymouth valiant and amc ambassador are most similar
+* the audi is more similar to the plymouth than the amc
+
+\  
+\  
+\  
+
+##### Mixed numeric/categorical data
+```{r}
+set.seed(1)
+df3.auto.subset.cat <- df1.auto %>% 
+    select(name,
+           mpg, 
+           cylinders, 
+           displacement, 
+           origin) %>%  
+    sample_n(3)
+
+# print: 
+df3.auto.subset.cat %>% 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+
+```
+
+
+\  
+\  
+\  
+
+Now we'll use Gower distances on mixed data: 
+
+```{r}
+# for convenience, add rownames: 
+rownames(df3.auto.subset.cat) <- df3.auto.subset.cat %>%
+    pull(name) %>% 
+    substr(1,10)
+
+
+
+m2.gower.dis <- daisy(df3.auto.subset.cat, 
+                      metric = "gower")
+
+m2.gower.dis
+
+
+```
+
+
+
