@@ -53,12 +53,12 @@ Ok, let's get started
 You will only need to do this once. I recommend running these lines in the console instead of the script editor. 
 
 ```{r eval = FALSE}
-install.packages("dplyr")
-install.packages("ggplot2")
-install.packages("here")
-install.packages("readr")
-install.packages("GGally")
-install.packages("gapminder")
+# install.packages("dplyr")
+# install.packages("ggplot2")
+# install.packages("here")
+# install.packages("readr")
+# install.packages("GGally")
+# install.packages("gapminder")
 
 ```
 
