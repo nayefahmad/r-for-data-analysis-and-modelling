@@ -1,0 +1,59 @@
+---
+title: 'Day 2: Time series analysis and forecasting'
+author: "Nayef Ahmad - VCH Decision Support"
+date: "November 3, 2018"
+output: 
+    html_document: 
+      toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library("kableExtra")
+
+
+# shortcuts: 
+# > ctrl + alt + i ==> new code chunk
+# > ctrl + shift + k ==> knit doc 
+# \  ==> line break (include 2 spaces after)
+```
+
+## Load the packages for the current session
+```{r message = FALSE}
+library(dplyr)  # for manipulating data frames 
+library(ggplot2)  # for data viz
+library(here)  # for simplifying folder references 
+library(readr)  # reading and writing data files 
+library(fpp)  # forecasting principles and practices 
+library(prophet)  # facebook's forecasting package 
+```
+
+## Time series analysis 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Producing forecasts 
+
+
+
+
+
+
+
+
+
+
+## Evaluating forecasts 
