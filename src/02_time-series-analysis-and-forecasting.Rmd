@@ -9,7 +9,9 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
 
 
 library("kableExtra")
@@ -21,8 +23,8 @@ library("kableExtra")
 # \  ==> line break (include 2 spaces after)
 ```
 
-## Load the packages for the current session
-```{r message = FALSE}
+## Load the packages and functions for the current session
+```{r message = FALSE, warning = FALSE}
 library(dplyr)  # for manipulating data frames 
 library(ggplot2)  # for data viz
 library(here)  # for simplifying folder references 
@@ -31,7 +33,11 @@ library(fpp)  # forecasting principles and practices
 library(prophet)  # facebook's forecasting package 
 library(janitor)  # for cleaning up dataframes  
 library(lubridate)  # for working with dates 
+library(tidyr)  # for tidying data
 library(magrittr)  # for easy piping 
+
+source(here::here("src", "stl.as.df_function.R"))
+
 ```
 
 ## Time series analysis 
@@ -43,8 +49,7 @@ library(magrittr)  # for easy piping
 
 # df1.1.tickets.2017 <- read.csv(url("ftp://webftp.vancouver.ca/opendata/csv/2017Parking_Tickets.csv"))
 
-# df1.2.tickets.2016 <- read.csv(url("ftp://webftp.vancouver.ca/opendata/csv/2017Parking_Tickets.csv"))
-
+# df1.2.tickets.2016 <- read.csv(url("ftp://webftp.vancouver.ca/opendata/csv/2016Parking_Tickets.csv"))
 
 
 
@@ -54,22 +59,25 @@ df1.1.tickets.2017 <- read_csv(here::here("data",
                         "vancouver-parking-tickets-2017.csv")) %>%
     select(-"X1")
 
+df1.2.tickets.2016 <- read_csv(here::here("data", 
+                        "vancouver-parking-tickets-2016.csv"))
+
+# union of the two datasets: 
+df1.tickets <- rbind(df1.2.tickets.2016, 
+                     df1.1.tickets.2017)
+
+
 # let's do some wrangling: 
-df1.1.tickets.2017 %<>% 
+df1.tickets %<>% 
     clean_names() %>% 
     mutate(entry_date = mdy(entry_date)) %>% 
     mutate_if(is.character, 
               factor)
 
-
-
-
-
-
 # view result: 
-# str(df1.1.tickets.2017)
-# summary(df1.1.tickets.2017)
-head(df1.1.tickets.2017) %>% 
+# str(df1.tickets)
+# summary(df1.tickets)
+head(df1.tickets) %>% 
     kable() %>% 
     kable_styling(bootstrap_options = c("striped",
                                         "condensed", 
@@ -85,19 +93,23 @@ Note that we have to join on list of all dates in order to make sure there are n
 
 ```{r}
 # group by 
-df2.daily.tickets <- df1.tickets.2017 %>% 
+df2.daily.tickets <- df1.tickets %>% 
     group_by(entry_date) %>% 
     summarise(count = n())
 
 # all dates: 
-df3.1.all.dates <- data.frame(dates = seq(as.Date("2017-01-01"),
+df3.1.all.dates <- data.frame(dates = seq(as.Date("2016-01-01"),
                                         as.Date("2017-12-31"),
                                         by="1 day"))
 
 # full join: 
 df3.daily.tickets.joined <- df2.daily.tickets %>% 
     full_join(df3.1.all.dates, 
-              by = c("entry_date" = "dates"))
+              by = c("entry_date" = "dates")) %>% 
+    arrange(entry_date) %>% 
+    
+    # replace NAs with 0s: 
+    mutate(count = replace_na(count, 0))
 
 
 # view result: 
@@ -137,8 +149,8 @@ p1.parking.2017 <- df2.daily.tickets %>%
                y = count)) + 
     geom_line() + 
     labs(title = "Daily parking tickets in Vancouver, BC", 
-         subtitle = "2017-01-01 to 2017-12-31\n\n", 
-         caption = "\n\nSource:ftp://webftp.vancouver.ca/opendata/csv/2017Parking_Tickets.csv") + 
+         subtitle = "2016-01-01 to 2017-12-31\n\n", 
+         caption = "\n\nSource:https://data.vancouver.ca/datacatalogue/parking-tickets.htm") + 
     
     geom_smooth() +
     
@@ -150,9 +162,59 @@ p1.parking.2017
 ```
 
 
+#### Break down into time series components
+
+First we have to convert the counts into a time series object
+```{r}
+# reference: https://robjhyndman.com/hyndsight/dailydata/
+
+t1.tickets.time.series <- df3.daily.tickets.joined %>% 
+    pull(count) %>%   # pull out the count column as a vector
+    ts(frequency = 365, 
+       start = c(2016)) 
+
+# t1.tickets.time.series
+```
 
 
+Now we can run an  STL decomposition. 
 
+```{r}
+stl(t1.tickets.time.series,
+    s.window = "periodic") %>% plot
+
+# get decomposition as a df: 
+df4.stl.decomp <- stl.as.df_fn(t1.tickets.time.series)
+
+# join back on orig data: 
+df4.stl.decomp <- cbind(df3.daily.tickets.joined, 
+                        df4.stl.decomp) %>% 
+    select(-"data")
+
+# str(df4.stl.decomp)
+# summary(df4.stl.decomp)
+head(df4.stl.decomp, 20) %>% 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+```
+
+It's probably easier to explain these components with a simpler case, so we'll look at the the standard textbook example:  
+
+
+```{r}
+plot(elecequip)
+
+stl(elecequip, 
+    s.window = "periodic") %>% plot
+
+stl.as.df_fn(elecequip) %>% head
+
+```
 
 
 
