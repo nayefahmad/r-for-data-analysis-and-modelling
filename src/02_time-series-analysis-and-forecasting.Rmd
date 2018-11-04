@@ -335,7 +335,7 @@ df7.prophet.fcast %>%
 p2.prophet.fcast <-
     plot(m1, df7.prophet.fcast) +
     labs(title = "Forecast of number of daily parking tickets in Vancouver for 2018",
-         subtitle = "Validation set: 2018-01-01 to 2018-03-30 \nRMSE on validation set = 167 \n\n\n",
+         subtitle = "Validation set: 2018-01-01 to 2018-03-30 \nRMSE on validation set = 167 \n",
          caption = "\n\nData source: https://data.vancouver.ca/datacatalogue/parking-tickets.htm ") +
     theme_classic(base_size = 16); p2.prophet.fcast
 
@@ -434,6 +434,15 @@ p3.fcast.validation <-
                   y = yhat), 
               colour = "steelblue") + 
     
+    # add confidence intervals: 
+    geom_ribbon(data = df8.hist.and.fcast %>%
+                  filter(dates >= "2017-12-01",
+                         dates <= "2018-03-30"),
+                aes(ymin = yhat_lower, 
+                    ymax = yhat_upper), 
+                fill = "grey60", 
+                alpha = .2) + 
+    
     labs(title = "Evaluating forecast of number of parking tickets, \n1st Jan to 30th March, 2018", 
          subtitle = paste0("Training data: 2016-01-01 to 2017-12-31 \nRMSE = ", round(rmse))) + 
     theme_classic(base_size = 16)
@@ -470,7 +479,7 @@ p3.fcast.validation
 
 
 
-## Write outputs: 
+## Write outputs 
 ```{r}
 ggsave(here::here("results", 
                   "output from src", 
