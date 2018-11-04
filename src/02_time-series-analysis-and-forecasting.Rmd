@@ -24,6 +24,7 @@ library("kableExtra")
 ```
 
 ## Load the packages and functions for the current session
+We'll be using some forecasting-specific packages today, as well as the usual tidyverse ones. 
 ```{r message = FALSE, warning = FALSE}
 library(dplyr)  # for manipulating data frames 
 library(ggplot2)  # for data viz
@@ -40,9 +41,8 @@ source(here::here("src", "stl.as.df_function.R"))
 
 ```
 
-## Time series analysis 
-### Daily parking tickets in Vancouver
-#### Read in and clean data for 2017 
+## Daily parking tickets in Vancouver
+### Read in and clean data for 2016-17
 ```{r}
 # if you want the entire parking data set, run this: 
 # warning: this will take a long time. 
@@ -50,8 +50,6 @@ source(here::here("src", "stl.as.df_function.R"))
 # df1.1.tickets.2017 <- read.csv(url("ftp://webftp.vancouver.ca/opendata/csv/2017Parking_Tickets.csv"))
 
 # df1.2.tickets.2016 <- read.csv(url("ftp://webftp.vancouver.ca/opendata/csv/2016Parking_Tickets.csv"))
-
-
 
 # in case it's easier to load this off disk instead of 
 # over network: 
@@ -77,6 +75,11 @@ df1.tickets %<>%
 # view result: 
 # str(df1.tickets)
 # summary(df1.tickets)
+
+```
+
+Take a quick look at the data: 
+```{r}
 head(df1.tickets) %>% 
     kable() %>% 
     kable_styling(bootstrap_options = c("striped",
@@ -85,11 +88,43 @@ head(df1.tickets) %>%
                   full_width = FALSE, 
                   position = "left")
 
+```
+
+
+
+### Read in 2018 data (test set)
+To understand whether our forecasting methodology is any good, we must compare its forecasts against data that it has never seen. We'll use 2018 data for this.  
+
+```{r}
+# df1.3.tickets.2018 <- read.csv(url("ftp://webftp.vancouver.ca/opendata/csv/2018Parking_Tickets.csv"))
+
+# finally, read in 2018 data (test dataset)
+df1.3.tickets.2018 <- read_csv(here::here("data", 
+                        "vancouver-parking-tickets-2018.csv"))%>% clean_names() %>% 
+    mutate(entry_date = mdy(entry_date)) %>% 
+    mutate_if(is.character, 
+              factor) 
+
+# view result: 
+head(df1.3.tickets.2018) %>% 
+    union_all(tail(df1.3.tickets.2018)) %>% 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+
+
 
 ```
 
-#### Group by date
-Note that we have to join on list of all dates in order to make sure there are no missing dates in the data.  
+
+
+
+### Group by date
+Note that we have to join on list of all dates in order to make sure there are no missing dates in the data. In case you're keeping track, joins are something that you can do in Excel, but it's a bit of a pain. ^[https://superuser.com/questions/420635/how-do-i-join-two-worksheets-in-excel-as-i-would-in-sql]
 
 ```{r}
 # group by 
@@ -142,7 +177,7 @@ Interesting that there's no data for Christmas and New Year's.
 \  
 \  
 
-#### Visualize time series: 
+### Visualize time series 
 ```{r}
 p1.parking.2017 <- df2.daily.tickets %>% 
     ggplot(aes(x = entry_date, 
@@ -162,9 +197,16 @@ p1.parking.2017
 ```
 
 
-#### Break down into time series components
+### Break down into time series components
+We are often asked to interpret trends in data. Common questions include: 
 
-First we have to convert the counts into a time series object
+* Is there seasonality in this data? If yes, can we adjust for the seasonality? 
+* Is there a trend over the last X years? 
+* Is this data unusual, or is it within line with previous trends? 
+
+To do this, it's very useful to be decompose the time series into trend, seasonality, and remainder components. 
+
+First we have to convert the counts into a time series object: 
 ```{r}
 # reference: https://robjhyndman.com/hyndsight/dailydata/
 
@@ -173,7 +215,7 @@ t1.tickets.time.series <- df3.daily.tickets.joined %>%
     ts(frequency = 365, 
        start = c(2016)) 
 
-# t1.tickets.time.series
+str(t1.tickets.time.series) 
 ```
 
 
@@ -203,6 +245,22 @@ head(df4.stl.decomp, 20) %>%
 
 ```
 
+Notice the distribution of the remainder. This is what's "left over" after your decomposition model has been fitted to the past data. You should expect that the errors your forecast makes in future will have a similar distribution, at best. 
+
+It's a good thing that the remainders have a nice bell shape with mean very close to zero. 
+
+```{r}
+df4.stl.decomp$remainder %>% 
+    hist(50, main = "Distribution of remainders from STL decomposition")
+
+abline(v = mean(df4.stl.decomp$remainder), 
+       col = "red")
+```
+
+
+
+
+
 It's probably easier to explain these components with a simpler case, so we'll look at the the standard textbook example:  
 
 
@@ -216,7 +274,52 @@ stl.as.df_fn(elecequip) %>% head
 
 ```
 
+### Optional: use prophet package
 
+```{r}
+# fit model: 
+m1 <- prophet(df3.daily.tickets.joined %>% 
+                  rename(ds = entry_date, 
+                         y = count))
+
+# forecast next up to 30th March 2018: 
+df5.future <- make_future_dataframe(m1, periods = 89)
+
+# make prediction: 
+prophet.fcast <- predict(m1, df5.future)  
+
+prophet.fcast %>% 
+    tail(31) %>% 
+    select(yhat_lower, 
+           yhat, 
+           yhat_upper) %>% 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+    
+
+# plot fcast: 
+plot(m1, prophet.fcast) +
+    labs(title = "Forecast of number of daily parking tickets in Vancouver for 2018", 
+         subtitle = "Training data: 2016-01-01 to 2017-12-31\nForecast horizon: 2018-01-01 to 2018-03-30") +
+    theme_classic(base_size = 16)
+
+
+# decompositions: 
+prophet_plot_components(m1, prophet.fcast)
+
+```
+
+Let's plot prophet's fcast with actual data as well. 
+
+```{r}
+df6.prophet.fcast.with.actual <- df6.prophet.fcast.with.actual[]
+    
+
+```
 
 
 
