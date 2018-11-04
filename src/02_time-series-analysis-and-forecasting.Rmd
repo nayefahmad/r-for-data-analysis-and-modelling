@@ -172,6 +172,33 @@ tail(df3.daily.tickets.joined) %>%
 ```
 
 Interesting that there's no data for Christmas and New Year's.  
+Let's do the same grouping for the 2018 data.
+
+```{r}
+df4.daily.tickets.2018 <- 
+    df1.3.tickets.2018 %>% 
+    group_by(entry_date) %>% 
+    summarise(count = n())
+
+df4.1.all.dates <- data.frame(dates=seq(as.Date("2018-01-01"),
+                                        as.Date("2018-12-31"),
+                                        by="1 day"))
+
+df4.daily.tickets.2018 %<>% 
+    full_join(df4.1.all.dates, 
+              by = c("entry_date" = "dates")) %>% 
+    arrange(entry_date) 
+    
+    # replace NAs with 0s: 
+    # mutate(count = replace_na(count, 0))
+
+# str(df4.daily.tickets.2018)
+# summary(df4.daily.tickets.2018)
+# head(df4.daily.tickets.2018)
+# tail(df4.daily.tickets.2018)
+
+```
+
 
 \  
 \  
@@ -226,16 +253,16 @@ stl(t1.tickets.time.series,
     s.window = "periodic") %>% plot
 
 # get decomposition as a df: 
-df4.stl.decomp <- stl.as.df_fn(t1.tickets.time.series)
+df5.stl.decomp <- stl.as.df_fn(t1.tickets.time.series)
 
 # join back on orig data: 
-df4.stl.decomp <- cbind(df3.daily.tickets.joined, 
-                        df4.stl.decomp) %>% 
+df5.stl.decomp <- cbind(df3.daily.tickets.joined, 
+                        df5.stl.decomp) %>% 
     select(-"data")
 
 # str(df4.stl.decomp)
 # summary(df4.stl.decomp)
-head(df4.stl.decomp, 20) %>% 
+head(df5.stl.decomp, 20) %>% 
     kable() %>% 
     kable_styling(bootstrap_options = c("striped",
                                         "condensed", 
@@ -250,10 +277,10 @@ Notice the distribution of the remainder. This is what's "left over" after your 
 It's a good thing that the remainders have a nice bell shape with mean very close to zero. 
 
 ```{r}
-df4.stl.decomp$remainder %>% 
+df5.stl.decomp$remainder %>% 
     hist(50, main = "Distribution of remainders from STL decomposition")
 
-abline(v = mean(df4.stl.decomp$remainder), 
+abline(v = mean(df5.stl.decomp$remainder), 
        col = "red")
 ```
 
@@ -283,16 +310,19 @@ m1 <- prophet(df3.daily.tickets.joined %>%
                          y = count))
 
 # forecast next up to 30th March 2018: 
-df5.future <- make_future_dataframe(m1, periods = 89)
+df6.future <- make_future_dataframe(m1, periods = 365)
 
 # make prediction: 
-prophet.fcast <- predict(m1, df5.future)  
+df7.prophet.fcast <- predict(m1, df6.future)  
 
-prophet.fcast %>% 
-    tail(31) %>% 
-    select(yhat_lower, 
-           yhat, 
-           yhat_upper) %>% 
+df7.prophet.fcast %>%
+    tail(31) %>%
+    select(ds,
+           yhat_lower,
+           yhat,
+           yhat_upper) %>%
+    mutate(ds = as.character(ds) %>% as.Date) %>%
+
     kable() %>% 
     kable_styling(bootstrap_options = c("striped",
                                         "condensed", 
@@ -301,28 +331,117 @@ prophet.fcast %>%
                   position = "left")
     
 
-# plot fcast: 
-plot(m1, prophet.fcast) +
-    labs(title = "Forecast of number of daily parking tickets in Vancouver for 2018", 
-         subtitle = "Training data: 2016-01-01 to 2017-12-31\nForecast horizon: 2018-01-01 to 2018-03-30") +
-    theme_classic(base_size = 16)
+# plot fcast:
+p2.prophet.fcast <-
+    plot(m1, df7.prophet.fcast) +
+    labs(title = "Forecast of number of daily parking tickets in Vancouver for 2018",
+         subtitle = "Validation set: 2018-01-01 to 2018-03-30 \nRMSE on validation set = 167 \n\n\n",
+         caption = "\n\nData source: https://data.vancouver.ca/datacatalogue/parking-tickets.htm ") +
+    theme_classic(base_size = 16); p2.prophet.fcast
 
 
 # decompositions: 
-prophet_plot_components(m1, prophet.fcast)
+prophet_plot_components(m1, df7.prophet.fcast)
 
 ```
 
 Let's plot prophet's fcast with actual data as well. 
 
+First we'll prep the data for plotting. 
+
 ```{r}
-df6.prophet.fcast.with.actual <- df6.prophet.fcast.with.actual[]
+df8.1.all.dates <- 
+    data.frame(dates = seq(as.Date("2016-01-01"),
+                           as.Date("2018-12-31"),
+                           by="1 day"))
     
+    
+df8.hist.and.fcast <- 
+    df8.1.all.dates %>% 
+    full_join(df3.daily.tickets.joined, 
+              by = c("dates" = "entry_date")) %>% 
+    rename(count2017 = count) %>% 
+    
+    # now add 2018 data: 
+    full_join(df4.daily.tickets.2018, 
+              by = c("dates" = "entry_date")) %>% 
+    rename(count2018 = count) %>% 
+    
+    # apparently have to change to POSIXCT: 
+    mutate(dates = as.POSIXct(dates)) %>% 
+    
+    # now join on prophet fcast: 
+    full_join(df7.prophet.fcast %>% 
+                  filter(ds >= "2018-01-01") %>% 
+                  select(ds, 
+                         yhat_lower, 
+                         yhat, 
+                         yhat_upper), 
+              by = c("dates" = "ds"))  
+
+
+str(df8.hist.and.fcast)
+df8.hist.and.fcast[729:740, ]
 
 ```
 
 
+Let's evaluate the forecast error: 
+```{r}
+df9.validate.fcast <- 
+    df8.hist.and.fcast %>% 
+    filter(dates >= "2018-01-01", 
+           dates <= "2018-03-30") %>% 
+    select(dates, 
+           count2018, 
+           yhat) %>% 
+    mutate(error = (count2018 - yhat),
+           sq.error = (count2018 - yhat)^2)
 
+rmse <- sqrt(mean(df9.validate.fcast$sq.error))
+print(paste0("RMSE = ", round(rmse,1)))
+
+mae <- mean(abs(df9.validate.fcast$error))
+print(paste0("MAE = ", round(mae, 1)))
+
+```
+
+
+Now the plot: 
+```{r}
+p3.fcast.validation <- 
+    df8.hist.and.fcast %>% 
+    filter(dates >= "2017-12-01",
+           dates <= "2018-03-30") %>% 
+    ggplot(aes(x = dates, 
+               y = count2017)) + 
+    geom_line() + 
+    
+    # add 2018 actuals: 
+    geom_line(data = df8.hist.and.fcast %>%
+                  filter(dates >= "2017-12-01",
+                         dates <= "2018-03-30"), 
+              aes(x = dates, 
+                  y = count2018), 
+              colour = "blue", 
+              size = 1) + 
+    
+    # add 2018 fcast: 
+    geom_line(data = df8.hist.and.fcast %>%
+                  filter(dates >= "2017-12-01",
+                         dates <= "2018-03-30"), 
+              aes(x = dates, 
+                  y = yhat), 
+              colour = "steelblue") + 
+    
+    labs(title = "Evaluating forecast of number of parking tickets, \n1st Jan to 30th March, 2018", 
+         subtitle = paste0("Training data: 2016-01-01 to 2017-12-31 \nRMSE = ", round(rmse))) + 
+    theme_classic(base_size = 16)
+
+p3.fcast.validation
+
+
+```
 
 
 
@@ -344,3 +463,26 @@ df6.prophet.fcast.with.actual <- df6.prophet.fcast.with.actual[]
 
 
 ## Evaluating forecasts 
+
+
+
+
+
+
+
+## Write outputs: 
+```{r}
+ggsave(here::here("results", 
+                  "output from src", 
+                  "2018-11-03_forecast-parking-tickets-full-2018.pdf"), 
+       p2.prophet.fcast, 
+       width = 10)
+
+ggsave(here::here("results", 
+                  "output from src", 
+                  "2018-11-03_validating-2018-fcast.pdf"), 
+       p3.fcast.validation, 
+       width = 10)
+
+```
+
