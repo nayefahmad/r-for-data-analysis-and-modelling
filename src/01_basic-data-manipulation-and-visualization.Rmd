@@ -5,7 +5,7 @@ date: "September 14, 2018"
 output: 
     html_document: 
         toc: yes
-        code_folding: hide
+        code_folding: show
 ---
 
 ```{r setup, include=FALSE}
@@ -29,6 +29,8 @@ library("kableExtra")
 
 * [The impressive growth of R](https://stackoverflow.blog/2017/10/10/impressive-growth-r/)
 * [The incredible growth of Python](https://stackoverflow.blog/2017/10/10/impressive-growth-r/)
+* R is particularly widely used in [healthcare](https://nhsrcommunity.com/about/) 
+* It's in [high demand in the data science job market](https://www.cio.com/article/3263790/data-science/the-essential-skills-and-traits-of-an-expert-data-scientist.html) 
 
 #### ...for good reason 
 
