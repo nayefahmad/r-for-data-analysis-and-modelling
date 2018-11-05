@@ -5,10 +5,13 @@ date: "September 14, 2018"
 output: 
     html_document: 
         toc: yes
+        code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
 
 library("kableExtra")
 

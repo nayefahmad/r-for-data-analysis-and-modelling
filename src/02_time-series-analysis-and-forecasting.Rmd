@@ -443,8 +443,8 @@ p3.fcast.validation <-
                 fill = "grey60", 
                 alpha = .2) + 
     
-    labs(title = "Evaluating forecast of number of parking tickets, \n1st Jan to 30th March, 2018", 
-         subtitle = paste0("Training data: 2016-01-01 to 2017-12-31 \nRMSE = ", round(rmse))) + 
+    labs(title = "Evaluating forecast of number of parking tickets in 2018", 
+         subtitle = paste0("Training data: 2016-01-01 to 2017-12-31 \nValidation data: 2018-01-01 to 2018-03-30 \nRMSE = ", round(rmse), "\n")) + 
     theme_classic(base_size = 16)
 
 p3.fcast.validation
