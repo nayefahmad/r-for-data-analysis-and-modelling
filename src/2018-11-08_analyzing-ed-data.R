@@ -40,9 +40,9 @@ p1.pairs <- df1.ed.data %>%
     select(ed_los_minutes, 
            ad_los_days, 
            age, 
-           admission_nursing_unit_code) %>% 
+           triage_acuity_code) %>% 
     
-    ggpairs(cardinality_threshold = 27); p1.pairs
+    ggpairs(); p1.pairs
 
 # save output 
 ggsave(here("results", 
@@ -62,6 +62,12 @@ cor(df1.ed.data$ed_los_minutes,
     method = "spearman",  # more general than pearson
     use = "complete.obs")
 
+cor(df1.ed.data$age, 
+    df1.ed.data$ad_los_days, 
+    method = "spearman", 
+    use = "complete.obs")  # 0.28
+
+
 # difference between pearson's and spearman's correlations: 
 x <- 1:100
 y <- exp(x)  # y = e^x, the exponential function 
@@ -80,8 +86,20 @@ cor(y,x, method = "spearman")  # 1.00 ==> actually there is a perfect correlatio
 p2.ed.and.ad.los <- df1.ed.data %>% 
     ggplot(aes(x = ed_los_minutes, 
                y = ad_los_days)) + 
-    geom_point(alpha = 0.1) + 
-    geom_smooth() + 
+    geom_point(alpha = 0.1) +  # alpha sets transparency of points 
+    
+    # data is too bunched together to see properly. 
+    # let's convert to log-scales: 
+    
+    scale_y_log10(breaks = c(1, 5, 10, 30, 100)) + 
+    scale_x_log10(breaks = c(30, 60, 600, 1000, 2000, 10000)) + 
+    
+    geom_smooth() +  # by default this uses method = GAM 
+    
+    geom_smooth(method = "lm", 
+                colour = "skyblue", 
+                se = FALSE) + 
+    
     facet_wrap(~triage_acuity_code); p2.ed.and.ad.los
 
 # save output 
