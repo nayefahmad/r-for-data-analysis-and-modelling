@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE,
 
 
 library("kableExtra")
-
+library(ggpubr)
 
 # shortcuts: 
 # > ctrl + alt + i ==> new code chunk
@@ -36,7 +36,6 @@ library(janitor)  # for cleaning up dataframes
 library(lubridate)  # for working with dates 
 library(tidyr)  # for tidying data
 library(magrittr)  # for easy piping 
-
 
 # import custom functions: 
 # I will email these files to you; save them in your "src" 
@@ -160,13 +159,73 @@ Try creating the same graphs with these series:
 
 * ```usdeaths```
 * ```fancy```
+* ```dj```
 
 
 ## Time series decomposition 
 
+```{r}
+stl(elecequip, 
+    s.window = "periodic") %>% plot
+
+stl.as.df_fn(elecequip) %>% head
+
+```
+
+
+## Quick and dirty de-seasonalizing  
+A quick and dirty method to deseasonalize a time series is to fit a robust linear model to the data, predicting the value of the series using the month as a predictor.^[see here for example: https://www.jstatsoft.org/article/view/v040i01] The residuals from this model are the deseasonalized series. 
+
+
+```{r}
+df1.elec <- data.frame(month = c(rep(month.abb, times = 15), 
+                                 month.abb[1:11]),
+                       year = c(rep(1996:2010, each = 12), 
+                                rep(2011, 11)),
+                       elecequip = as.numeric(elecequip)) %>% 
+    mutate(timeperiod = 1:n())
+                       
+library(MASS)  # conflicts with dplyr select, so we didn't 
+# load at the beginning 
+
+m1.elec <- rlm(elecequip ~ month -1,  # "-1" removes intercept
+               data = df1.elec)
+
+
+unloadNamespace("MASS")  # unload the package 
+
+# summary(m1.elec) 
+df1.elec %<>% 
+    mutate(deseasonalized = resid(m1.elec))
+
+# plot deseasonalized series: 
+p1.deseasonalized <- df1.elec %>% 
+    ggplot(aes(x = timeperiod, 
+               y = deseasonalized)) + 
+    geom_line() + 
+    labs(title = "Deseasonalised")
+
+
+ggarrange(p1.deseasonalized, 
+          autoplot(elecequip), 
+          nrow = 2)
+
+
+
+
+```
+
+
+
+
 
 ## Stationarity of time series  
-Hadley Wickham paper: detrending and differencing  
+
+
+
+ 
+
+
 
 
 \  
@@ -196,15 +255,6 @@ Hadley Wickham paper: detrending and differencing
 
 ***********************************************************
 
-```{r}
-plot(elecequip)
-
-stl(elecequip, 
-    s.window = "periodic") %>% plot
-
-stl.as.df_fn(elecequip) %>% head
-
-```
 
 
 
