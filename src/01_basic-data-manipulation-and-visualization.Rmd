@@ -22,6 +22,7 @@ library("kableExtra")
 # \  ==> line break (include 2 spaces after)
 ```
 
+# Part 1 
 
 ## Why are we talking about R/Python? 
 
@@ -57,7 +58,7 @@ Ok, let's get started
 ## Install the packages you need
 You will only need to do this once. I recommend running these lines in the console instead of the script editor. 
 
-```{r eval = FALSE}
+```{r  }
 # install.packages("dplyr")
 # install.packages("ggplot2")
 # install.packages("here")
@@ -75,6 +76,7 @@ library("here")  # for simplifying folder references
 library("readr")  # reading and writing data files 
 library("GGally")  # extension to ggplot2
 library("gapminder")  # gapminder dataset
+library("janitor")  # for cleaning up dataframes 
 
 ```
 
@@ -531,5 +533,249 @@ p10.life.gdp <- gapminder %>%
 
 p10.life.gdp
 ```
+
+******************************************************
+
+\  
+\  
+\  
+
+
+# Part 2 
+
+## Exercise: Exploring LGH ED data 
+
+Use dplyr and gpplot2 (and any other packages you want to) to explore the LGH ED data saved in this shared folder: 
+
+* *Folder link*: G:\VCHDecisionSupport\Learning\Peer Learning Sessions\2018-11-09_R for data analysis and modelling\data
+* *Alternative* (for those on personal laptops): https://sftp.phsa.ca/?u=HdA4RmM&p=rLsWDWB 
+
+Start by saving the data in the "data" sub-folder of your project. Then use the following command. 
+
+```{r} 
+
+# change the dataframe's name if you want to  
+df3.ed.data <- read_csv(here::here("data", 
+                             "ed-data.csv"), 
+                        na = "NULL") %>% 
+    
+    # convert column names to lowercase, replace space with "_", etc.
+    clean_names() %>%  # this is from the "janitor" package 
+    
+    # change data types: 
+    mutate(ed_los_minutes = as.character(ed_los_minutes) %>% 
+               as.integer, 
+           ad_los_days = as.character(ad_los_days) %>% 
+               as.integer, 
+           age = as.character(age) %>% 
+               as.integer)
+
+
+```
+
+
+
+
+### Questions for investigation: 
+
+1) We are interested in predicting acute LOS in order to manage patient flow. Can we use ED LOS to predict Acute LOS? 
+
+2) Can we "adjust for" CTAS? 
+
+3) Relationship between age and acute LOS? 
+
+4) Relationship between ED LOS and CTAS. 
+
+5) Think about how quantifying these relationships can be useful for identifying anomalies, designing interventions, etc.  
+
+
+Let's start by taking a quick look at some of the relationships between the variables. 
+
+
+```{r}
+str(df3.ed.data)
+
+```
+
+
+
+```{r }
+p11.pairs <- df3.ed.data %>%
+    select(ed_los_minutes, 
+           ad_los_days, 
+           age, 
+           triage_acuity_code) %>% 
+    
+    ggpairs(); p11.pairs
+
+# save output 
+ggsave(here("results", 
+            "output from src", 
+            "01_ed-date.jpeg"))  # by default ggsave saves the last plot that was called 
+
+
+```
+
+
+### Two types of correlation: Pearson's and Spearman's 
+
+Let's look at the correlation between ED LOS and acute LOS. Note that Pearson's correlation specifically measures the strength of *linear* relationships between 2 variables. 
+
+On the other hand, Spearman's correlation is more general, and is able to quantify the strength of monotonic relationships. For more, see [here](https://stats.stackexchange.com/questions/8071/how-to-choose-between-pearson-and-spearman-correlation) 
+
+```{r }
+cor(df3.ed.data$ed_los_minutes, 
+    df3.ed.data$ad_los_days, 
+    method = "pearson",  # measures strength of *linear* relationship 
+    use = "complete.obs")  # remove NA values 
+
+
+```
+
+
+
+```{r }
+cor(df3.ed.data$ed_los_minutes, 
+    df3.ed.data$ad_los_days, 
+    method = "spearman",  # more general than pearson
+    use = "complete.obs")
+
+cor(df3.ed.data$age, 
+    df3.ed.data$ad_los_days, 
+    method = "spearman", 
+    use = "complete.obs")  # 0.28
+
+
+```
+
+
+### Plotting Acute LOS vs ED LOS 
+
+```{r }
+
+p12.ed.and.ad.los <- df3.ed.data %>% 
+    ggplot(aes(x = ed_los_minutes, 
+               y = ad_los_days)) + 
+    geom_point(alpha = 0.1) +  # alpha sets transparency of points 
+    
+    # data is too bunched together to see properly. 
+    # let's convert to log-scales: 
+    
+    scale_y_log10(breaks = c(1, 5, 10, 30, 100)) + 
+    scale_x_log10(breaks = c(30, 60, 600, 1000, 2000, 10000)) + 
+    
+    geom_smooth() +  # by default this uses method = GAM 
+    
+    geom_smooth(method = "lm", 
+                colour = "skyblue", 
+                se = FALSE) + 
+    
+    facet_wrap(~triage_acuity_code); p12.ed.and.ad.los
+
+# save output 
+ggsave(here("results", 
+            "output from src", 
+            "02_ed-data.jpeg"))  # by default ggsave saves the last plot that was called 
+
+
+
+```
+
+
+Note that for CTAS 2-4, the overall pattern is that as ED LOS increases, mean acute LOS also increases. This is not true for CTAS 1 patients. Also interesting is the "wall" at 600 minutes for CTAS 3 and CTAS 4 patients. The mean acute LOS actually seems to decrease slightly for patients who just cross the 600 min mark - it's like this is a completely separate patient population.  
+
+
+\  
+\  
+\  
+
+### Acute LOS vs ED LOS by age 
+
+```{r}
+p13.ed.and.ad.los.age.groups <- df3.ed.data %>%
+    
+    # remove CTAS levels with too few observations: 
+    filter(!triage_acuity_code %in% c("5", NA)) %>% 
+    
+    mutate(age.group = case_when(
+        age < 20 ~ "under 20 yr", 
+        age >=20 & age <60 ~ "20-60 yr", 
+        age >= 60 ~ "over 60 yr") %>% 
+            factor(levels = c("under 20 yr", 
+                              "20-60 yr", 
+                              "over 60 yr"))) %>%
+    
+    ggplot(aes(x = ed_los_minutes, 
+               y = ad_los_days)) + 
+    geom_point(alpha = 0.1) + 
+    geom_smooth(aes(group = age.group, 
+                    colour = age.group), 
+                se = TRUE, 
+                alpha = 0.2) + 
+    
+    # zoom in on the x-axis: 
+    # coord_cartesian(xlim = c(0, 600)) +
+    scale_y_log10(breaks = c(1,5,10,30,100)) + 
+    scale_x_log10(breaks = c(30, 60, 300, 600, 2000)) + 
+        
+    facet_wrap(~triage_acuity_code); p13.ed.and.ad.los.age.groups
+
+# save output 
+ggsave(here("results", 
+            "output from src", 
+            "03_ed-date.jpeg"))  # by default ggsave saves the last plot that was called 
+
+```
+
+
+### Acute LOS vs CTAS level: 
+
+```{r}
+p14.los.vs.ctas <- df3.ed.data %>% 
+    
+    mutate(age.group = case_when(
+        age < 20 ~ 1, 
+        age >=20 & age <60 ~ 2, 
+        age >= 60 ~ 3) %>% 
+            as.factor) %>% 
+    
+    # remove NA value of age
+    filter(!is.na(age)) %>% 
+    
+    mutate(triage_acuity_code = as.factor(triage_acuity_code)) %>% 
+    
+    ggplot(aes(x = triage_acuity_code, 
+               y = ad_los_days)) + 
+    
+    geom_boxplot() + 
+    
+    stat_summary(fun.y = mean, 
+                 geom = "point", 
+                 colour = "firebrick") + 
+    
+    # take logarithm of y-axis: 
+    scale_y_log10(breaks = c(1, 2, 3, 4, 5, 10, 30, 60)) +  # by default, labels are in original units, not logged units
+    
+    # zoom in on y-axis: 
+    # coord_cartesian(ylim = c(0.1, 60)) + 
+    
+    facet_wrap(~age.group); p14.los.vs.ctas
+
+
+
+```
+
+Note that this kind of plot helps us to determine what counts as an outlier, based on past data. E.g. for CTAS 5 patients under 20 years, acute LOS of over 5 days is an outlier, but for patients 20-60 years at CTAS 5, LOS would have to be over 30 days before it counted as an outlier. 
+
+\  
+\  
+\  
+
+
+# See you next time 
+Well, that's the end of Day 1. Here's the link to the material we'll cover next time: https://rpubs.com/nayefahmad/day-2_time-series 
+
+
+
 
 
