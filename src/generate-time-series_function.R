@@ -5,9 +5,9 @@
 #*********************************************************
 
 # define function: -------------
-generate.ts_function <- function(sd1 = .1, 
-                                 sd2 = .1, 
-                                 trend2 = .5, 
+generate.ts_function <- function(sd1 = 1, 
+                                 sd2 = 4, 
+                                 trend2 = .09, 
                                  seed = TRUE){
     # output: 2 side by side ggplots 
     
@@ -20,8 +20,8 @@ generate.ts_function <- function(sd1 = .1,
     }
     
     # creat a random walk without drift: 
-    rwalk <- arima.sim(model = list(order = c(0, 1, 0)), 
-                       n = 100, 
+    rwalk <- arima.sim(model = list(order = c(0, 0, 0)), 
+                       n = 101, 
                        sd = sd1) %>% as.numeric
     
     # rwalk with drift: 
@@ -63,4 +63,4 @@ generate.ts_function <- function(sd1 = .1,
 # test the function: --------
 generate.ts_function(trend2 = .09, sd2 = 4)
 
-generate.ts_function(trend2 = .09, sd2 = 4, seed = FALSE)
+# generate.ts_function(trend2 = .09, sd2 = 4, seed = FALSE)
