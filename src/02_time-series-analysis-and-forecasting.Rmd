@@ -5,7 +5,7 @@ date: "November 3, 2018"
 output: 
     html_document: 
       toc: yes
-      code_folding: hide 
+      code_folding: show 
 ---
 
 ```{r setup, include=FALSE}
@@ -37,10 +37,187 @@ library(lubridate)  # for working with dates
 library(tidyr)  # for tidying data
 library(magrittr)  # for easy piping 
 
-source(here::here("src", "stl.as.df_function.R"))
+
+# import custom functions: 
+# I will email these files to you; save them in your "src" 
+#   folder
+source(here::here("src", "stl.as.df_function.R"))  
+source(here::here("src", "generate-time-series_function.R"))
 
 ```
 
+# Part 1 
+## Random generating processes 
+Before we look at specific time series, let's take a look at some randomly generated ones. Note that there are no systematic factors underlying these series, but they can display characteristics similar to those we see in real time series. 
+
+The point is, many of the patterns we think we see in time series are probably nothing but chance. If it is easy to generate a random dataset that looks very similar to your actual data, then maybe your actual data provides no evidence of any systematic factors?   
+
+> Inexperienced researchers and laypeople alike usually overestimate the role of systematic factors relative to chance factors ^[Abelson, 1995, *Statistics as Principled Argument*, p7] 
+
+```{r}
+# try this to get lots of random walks: 
+generate.ts_function(seed = FALSE)
+
+```
+
+
+```{r}
+# try this to get lots of random walks: 
+generate.ts_function(seed = FALSE)
+
+```
+
+
+
+
+## Features of time series data 
+
+Take a look at the following 2 time series. How are they different? 
+
+```{r}
+# this won't work unless you have imported the function first
+generate.ts_function()
+
+```
+
+
+
+We'll be examining three different components of a time series^[https://otexts.org/fpp2/tspatterns.html]: 
+
+1) *Trend*: a long-term increase or decrease in the data. It does not have to be linear. 
+2) *Seasonality*: A seasonal pattern occurs when a time series is affected by seasonal factors such as the time of the year or the day of the week. Seasonality is always of a fixed and known frequency.
+3) *Smoothness/variability*: Are neighbouring values of the time series correlated with one another, or are they completely independent of one aonther? If yes, how strongly are they related? 
+
+The series on the left has no trend, and very little variability. The one on the right has a significant positive trend, and is much "choppier", or less smooth. It may also have some seasonality, but we can't say for sure yet. 
+
+Let's use some exploratory graphs to inspect the components of a time series. 
+
+
+
+\  
+\  
+\  
+
+## Visualizing time series data with the fpp package 
+### Time series objects 
+So far we have been working with dataframes. E.g. mtcars is a dataframe: 
+```{r}
+str(mtcars)
+```
+
+Most time series functions require data to be in a time series format. An example time series object is elecequip: 
+
+```{r}
+str(elecequip)
+
+start(elecequip)
+end(elecequip)
+frequency(elecequip)  
+
+```
+
+Just to see how it works, let's convert one column of mtcars into a time series object. We use the ```ts``` function for that. 
+
+```{r}
+eg.time.seris <- mtcars %>% 
+    select(mpg) %>% 
+    ts()
+
+str(eg.time.seris)
+```
+
+### The autoplot() function 
+The ```autoplot``` knows how to deal with time series object, so that you don't have to specify all the individual components in ggplot. 
+
+```{r}
+autoplot(elecequip)
+```
+
+
+### The ggmonthplot() function 
+
+```{r}
+ggmonthplot(elecequip)
+```
+
+
+### The ggseasonplot() function 
+```{r}
+ggseasonplot(elecequip)
+```
+
+### The ggAcf() function 
+The autocorrelation function (ACF) is useful for  
+See here for more details on the autocorrelation function. 
+
+```{r}
+ggAcf(elecequip)
+
+```
+
+## Mini Exercise
+Try creating the same graphs with these series: 
+
+* ```usdeaths```
+* ```fancy```
+
+
+## Time series decomposition 
+
+
+## Stationarity of time series  
+Hadley Wickham paper: detrending and differencing  
+
+
+\  
+\  
+\  
+\  
+\  
+
+
+## Producing forecasts 
+
+\  
+\  
+\  
+\  
+\  
+
+## Evaluating forecasts 
+
+\  
+\  
+\  
+\  
+\  
+
+
+
+***********************************************************
+
+```{r}
+plot(elecequip)
+
+stl(elecequip, 
+    s.window = "periodic") %>% plot
+
+stl.as.df_fn(elecequip) %>% head
+
+```
+
+
+
+
+***********************************************************
+
+\  
+\  
+\  
+\  
+\  
+
+# Part 2 
 ## Daily parking tickets in Vancouver
 ### Read in and clean data for 2016-17
 ```{r}
@@ -288,18 +465,9 @@ abline(v = mean(df5.stl.decomp$remainder),
 
 
 
-It's probably easier to explain these components with a simpler case, so we'll look at the the standard textbook example:  
 
 
-```{r}
-plot(elecequip)
 
-stl(elecequip, 
-    s.window = "periodic") %>% plot
-
-stl.as.df_fn(elecequip) %>% head
-
-```
 
 ### Optional: use prophet package
 
@@ -459,19 +627,6 @@ p3.fcast.validation
 
 
 
-
-## Producing forecasts 
-
-
-
-
-
-
-
-
-
-
-## Evaluating forecasts 
 
 
 
