@@ -120,7 +120,8 @@ Just to see how it works, let's convert one column of mtcars into a time series 
 ```{r}
 eg.time.seris <- mtcars %>% 
     select(mpg) %>% 
-    ts()
+    ts(start = c(2018,1), 
+       frequency = 12)
 
 str(eg.time.seris)
 ```
@@ -180,17 +181,26 @@ A quick and dirty method to deseasonalize a time series is to fit a robust linea
 ```{r}
 df1.elec <- data.frame(month = c(rep(month.abb, times = 15), 
                                  month.abb[1:11]),
+                       # ^first we need to create a predictor column
+                       # that identifies the month
+                       
+                       # next we'll create a column for the year: 
                        year = c(rep(1996:2010, each = 12), 
                                 rep(2011, 11)),
+                       
+                       # next, a column with the data: 
                        elecequip = as.numeric(elecequip)) %>% 
+    
+    # finally, use this to add row numbers:  
     mutate(timeperiod = 1:n())
+
+
                        
 library(MASS)  # conflicts with dplyr select, so we didn't 
 # load at the beginning 
 
 m1.elec <- rlm(elecequip ~ month -1,  # "-1" removes intercept
                data = df1.elec)
-
 
 unloadNamespace("MASS")  # unload the package 
 
@@ -214,6 +224,7 @@ p2.orig <- df1.elec %>%
     labs(title = "Original series")
 
 
+# arrange the plots in a single figure: 
 ggarrange(p1.deseasonalized, 
           p2.orig, 
           nrow = 2)
@@ -222,25 +233,6 @@ ggarrange(p1.deseasonalized,
 
 
 ```
-
-
-
-
-
-## Stationarity of time series  
-
-
-
- 
-
-
-
-
-\  
-\  
-\  
-\  
-\  
 
 
 ## Producing forecasts 
