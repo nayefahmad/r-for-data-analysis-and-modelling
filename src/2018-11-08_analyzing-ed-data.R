@@ -105,10 +105,8 @@ p2.ed.and.ad.los <- df1.ed.data %>%
 # save output 
 ggsave(here("results", 
             "output from src", 
-            "02_ed-date.jpeg"))  # by default ggsave saves the last plot that was called 
+            "02_ed-data.jpeg"))  # by default ggsave saves the last plot that was called 
 
-# why no relationship? 
-# Ans. LOS is an "output" var, not an input? 
 
 
 # > 2.3) Acute LOS vs ED LOS by age : ------ 

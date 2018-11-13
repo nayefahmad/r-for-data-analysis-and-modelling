@@ -198,6 +198,7 @@ unloadNamespace("MASS")  # unload the package
 df1.elec %<>% 
     mutate(deseasonalized = resid(m1.elec))
 
+
 # plot deseasonalized series: 
 p1.deseasonalized <- df1.elec %>% 
     ggplot(aes(x = timeperiod, 
@@ -205,9 +206,16 @@ p1.deseasonalized <- df1.elec %>%
     geom_line() + 
     labs(title = "Deseasonalised")
 
+# plot original series: 
+p2.orig <- df1.elec %>% 
+    ggplot(aes(x = timeperiod, 
+               y = elecequip)) + 
+    geom_line() + 
+    labs(title = "Original series")
+
 
 ggarrange(p1.deseasonalized, 
-          autoplot(elecequip), 
+          p2.orig, 
           nrow = 2)
 
 
