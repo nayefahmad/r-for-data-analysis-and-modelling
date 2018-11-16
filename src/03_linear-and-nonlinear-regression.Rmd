@@ -55,7 +55,7 @@ Remember, all models are wrong but some are useful.^[https://en.wikipedia.org/wi
 Similarly, regression models simplify away a lot of detail from the raw data. This is a feature, not a bug. 
 
 
-### mtcars example 
+## mtcars example 
 Remember this graph? 
 
 ```{r}
@@ -93,24 +93,113 @@ Two ways to get those horizontal lines:
 ### Averages by group: 
 ```{r}
 mtcars %>% 
-    group_by(cyl)
+    group_by(cyl) %>% 
+    summarize(mean.mpg = mean(mpg)) %>% 
+    
+    # don's use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+    
+    
+```
+
+
+\  
+\  
+\  
+
+### Regression on categorical variable: 
+We use the ```lm``` function to fit a regression model. ```summary``` can be used to examine the model. 
+
+```{r}
+df1.mtcars <- mtcars %>% 
+    mutate(cyl = as.factor(cyl))
+
+m1.mpg.vs.cyl <- lm(mpg ~ cyl - 1, data = df1.mtcars)
+
+summary(m1.mpg.vs.cyl)
+
+
+```
+
+The default output is hard to save, so we'll use the ```broom``` package to clean up and create a nice dataframe. 
+
+```{r}
+broom::tidy(m1.mpg.vs.cyl)  
+#1 row per coefficient 
+
+broom::glance(m1.mpg.vs.cyl)  
+# 1 row per model; very useful when comparing lots of models
+
+broom::augment(m1.mpg.vs.cyl) %>% head
+# 1 row per observation
+
+```
+
+```{r}
+write_csv(broom::tidy(m1.mpg.vs.cyl), 
+          here("results", 
+               "output from src", 
+               "mtcars-regression.csv"))
 ```
 
 
 
 
+### Interpreting the change in the mean mpg
+In both cases above, we see that there's this negative trend: as num cylinders increases, mpg decreases. So what do we gain by doing the regression instead of just calculating averages?
+
+1) Are these "trends" real or are they the result of chance? E.g. is the difference in sample means of 6- and 8- cylinder cars representative of a real difference in the population?
+
+2) Will these "trends" still exist after we account for other variables? We shouldn't just filter out rows based on other variables - we should account for them systematically. 
+
+3) What is the size of the trend (for continuous variables)? Can we compare the trends of two different sites? Can we detect changes in the size of the trend? Can we use the trend to fill in gaps in our knowledge (interpolation and extrapolation)? 
+
+
+### Averages by group, after accounting for weight
+Let's fit another regression, this time incuding weight as a predictor variable. 
+
+```{r}
+m2.include.wt <- lm(mpg ~ cyl + wt, data = df1.mtcars)
+
+summary(m2.include.wt)
+```
+
+Note that the expected difference in mpg between 4-cylinder and 6-cylinder cars is **4.2556 mpg**, while it was `r 26.6636 - 19.7429` mpg previously. 
+
+Similarly, after accounting for weight, the difference between 6-cylinder cars and 8-cylinder cars is **`r 6.0709-4.2556`** instead of `r 19.7429 - 15.1000`
+
+**This is important. Our conclusions may be biased or irrelevant if we don't systematically control for confounding variables.** E.g. an observed difference in ALOS between two nursing units is almost certainly not due the characteristics of the two nursing units alone - there will be multiple confounding variables such as age, diagnoses, etc.  
+
+***********************************************
+
+\  
+\  
+\  
+ 
 
 ## Steps in regression modelling 
+
+1) Fit a model
+2) Diagnostics: any problems with the model? Is it suitable for the data? 
+3) Check overall significance and significance of individual predictors 
+4) Check goodness of fit 
+5) Fit another model; compare new model with old one, then go with the one that's better (there are algorithmic approaches for making these decisions)
+
 We'll look at the Advertising dataset from ISLR. 
 
 ```{r}
-df1.advert <- read_csv(here::here("data", 
+df2.advert <- read_csv(here::here("data", 
                                   "Advertising.csv")) %>% 
     select(-X1)
 
-str(df1.advert)
-summary(df1.advert)
-head(df1.advert)
+str(df2.advert)
+summary(df2.advert)
+head(df2.advert)
 
 ```
 
