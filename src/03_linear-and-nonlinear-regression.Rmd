@@ -1,0 +1,129 @@
+---
+title: "Day 3 - Linear and nonlinear regression"
+author: "Nayef Ahmad - VCH Decision Support"
+date: "November 16, 2018"
+output: 
+    html_document: 
+        toc: yes
+        code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+
+library("kableExtra")
+
+
+# shortcuts: 
+# > ctrl + alt + i ==> new code chunk
+# > ctrl + shift + k ==> knit doc 
+# \  ==> line break (include 2 spaces after)
+```
+
+
+## Load packages for today's session 
+
+```{r}
+library(dplyr)  # for manipulating data frames 
+library(ggplot2)  # for data viz
+library(here)  # for simplifying folder references 
+library(readr)  # reading and writing data files 
+library(GGally)  # extension to ggplot2
+library(ISLR)  # from the book Intro to Stat Learning with R 
+library(broom)  # for saving model outpus as dataframes 
+
+```
+
+## Motivation for regression models 
+
+Have you ever been asked to ...
+
+* Calculate an average of a variable? *(e.g. ALOS? Avg daily ED visits?)*
+* Investigate whether the average of one variable is related to one or more other variables? *(e.g. ALOS by nursing unit? ED visits by time of day?)* 
+* Use historical/sample data to make inferences about a population or what might happen in the future? 
+
+If you answered yes to all, regression models may be right for you. 
+
+**A regression models is a quantitative theory of how the mean/expected value of one variable (Y) changes as the values of other variables (X1, x2, ...) change.**
+
+Remember, all models are wrong but some are useful.^[https://en.wikipedia.org/wiki/All_models_are_wrong] Calculating an average was considered cutting-edge modelling in the 16th century.^[https://en.wikipedia.org/wiki/Average#Origin] In a sense, the average is "wrong" because no single data point might actually take the average value.^[https://www.gse.harvard.edu/news/ed/15/08/beyond-average]  
+
+Similarly, regression models simplify away a lot of detail from the raw data. This is a feature, not a bug. 
+
+
+### mtcars example 
+Remember this graph? 
+
+```{r}
+p1.group.means <- mtcars %>%
+    
+    # let's recode cyl as a discrete variable: 
+    mutate(cyl = factor(cyl, 
+                        levels = c(4, 6, 8))) %>% 
+    
+    # now start using gpplot functions: 
+    ggplot(aes(x = disp,  # specify x and y axis
+               y = mpg)) + 
+    
+    geom_point(aes(colour = cyl, 
+                   size = hp)) + 
+    
+    # examine three different ways of summarizing behaviour within
+    # each level of cyl: 
+    
+    # mean by group: 
+    stat_smooth(aes(group = cyl,
+                    colour = cyl), 
+                method = "lm", 
+                formula = y ~ 1) + 
+    
+    theme_classic()
+    
+# print: 
+p1.group.means
+
+```
+
+Two ways to get those horizontal lines: 
+
+### Averages by group: 
+```{r}
+mtcars %>% 
+    group_by(cyl)
+```
+
+
+
+
+
+## Steps in regression modelling 
+We'll look at the Advertising dataset from ISLR. 
+
+```{r}
+df1.advert <- read_csv(here::here("data", 
+                                  "Advertising.csv")) %>% 
+    select(-X1)
+
+str(df1.advert)
+summary(df1.advert)
+head(df1.advert)
+
+```
+
+
+
+### 
+
+```{r}
+
+```
+
+
+
+
+
+
