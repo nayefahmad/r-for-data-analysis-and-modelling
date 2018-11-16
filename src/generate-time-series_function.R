@@ -9,12 +9,17 @@ generate.ts_function <- function(sd1 = 1,
                                  sd2 = 4, 
                                  trend2 = .09, 
                                  seed = TRUE){
+    # input: standard deviations of 2 time series,  
+    #   size of trend slope, and argument to determine 
+    #   whether to generate random graph or a specific one 
+    
     # output: 2 side by side ggplots 
     
     library(dplyr)
     library(tidyr)
     
-    # set the random seed: 
+    # set the random seed. This ensures we always get same 
+    #   result
     if (seed == TRUE){
         set.seed(7)
     }
@@ -35,9 +40,9 @@ generate.ts_function <- function(sd1 = 1,
                       var1 = rwalk, 
                       var2 = rwalk.drift) %>% 
         
-        # gather moves column names into a "key" column, 
+        # gather() moves column names into a "key" column, 
         #   gathering the column values into a single "value" 
-        #   column 
+        #   column:  
         
         gather(key = "series",
                `var1`, 
