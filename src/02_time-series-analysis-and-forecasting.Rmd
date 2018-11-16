@@ -147,8 +147,7 @@ ggseasonplot(elecequip)
 ```
 
 ### The ggAcf() function 
-The autocorrelation function (ACF) is useful for  
-See here for more details on the autocorrelation function. 
+The autocorrelation function (ACF) is useful for identifying seasonality, and finding the correlation structure of a time series. 
 
 ```{r}
 ggAcf(elecequip)
@@ -174,7 +173,7 @@ stl.as.df_fn(elecequip) %>% head
 ```
 
 
-## Quick and dirty de-seasonalizing  
+## Optional: Quick and dirty de-seasonalizing  
 A quick and dirty method to deseasonalize a time series is to fit a robust linear model to the data, predicting the value of the series using the month as a predictor.^[see here for example: https://www.jstatsoft.org/article/view/v040i01] The residuals from this model are the deseasonalized series. 
 
 
@@ -235,7 +234,35 @@ ggarrange(p1.deseasonalized,
 ```
 
 
-## Producing forecasts 
+## Producing and evaluating forecasts 
+The basic steps are: 
+
+1) Split into training dataset and test dataset
+2) Fit models on training dataset 
+3) Use test set to compare models based on quantitative criteria and appropriateness for the given problem 
+4) Use the best model to produce the forecast
+
+```{r}
+# create training set: 
+train <- window(elecequip, 
+                start = c(1996, 1), 
+                end = c(2011, 12)) # take the first 170 observations 
+
+# fit ARIMA model: 
+model1 <- auto.arima(train)
+
+# examine result: 
+summary(model1)
+
+
+# validate on test set: 
+forecast(model1, 11) %>% 
+    autoplot 
+
+```
+
+
+
 
 \  
 \  
@@ -243,13 +270,7 @@ ggarrange(p1.deseasonalized,
 \  
 \  
 
-## Evaluating forecasts 
-
-\  
-\  
-\  
-\  
-\  
+  
 
 
 
