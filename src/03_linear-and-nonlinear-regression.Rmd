@@ -54,6 +54,14 @@ Remember, all models are wrong but some are useful.^[https://en.wikipedia.org/wi
 
 Similarly, regression models simplify away a lot of detail from the raw data. This is a feature, not a bug. 
 
+## Steps in regression modelling 
+
+1) Fit a model
+2) Diagnostics: any problems with the model? Is it suitable for the data? 
+3) Check overall significance and significance of individual predictors 
+4) Check goodness of fit 
+5) Fit another model; compare new model with old one, then go with the one that's better (there are algorithmic approaches for making these decisions)
+
 
 ## mtcars example 
 Remember this graph? 
@@ -181,7 +189,7 @@ Once you fit a model, it exists independently of the data that you started with.
 
 Although you will usually start by looking at regression coefficients, one of the best ways to interpet your model is to kick it and see what it does. In this context, kicking it refers to feeding it an artificial dataset that you create. 
 
-First, just try calling predict: 
+First, just try calling ```predict```: 
 
 ```{r}
 predict(m2.include.wt)
@@ -250,7 +258,7 @@ df2.mtcars.fake <-
     mutate(pred.mpg = predict(m2.include.wt, 
                               newdata = df2.mtcars.fake)) 
 
-# first point the points that were originally in the data:  
+# first plot the points that were originally in the data:  
 df1.mtcars %>% 
     mutate(pred.mpg = predict(m2.include.wt)) %>% 
     
@@ -259,7 +267,7 @@ df1.mtcars %>%
     
     geom_point(aes(col = cyl)) + 
     
-    # then add the new points: 
+    # then add the new points. Increase size to make them distinguishable: 
     geom_point(data = df2.mtcars.fake, 
                aes(x = wt, 
                    y = pred.mpg, 
@@ -275,7 +283,7 @@ df1.mtcars %>%
 
 ### Plotting actuals vs predicted values to assess model performance
 
-Plotting the actual values of your response variable vs the predicted values from the model is a great way to see how your model is doing and to compare different models. In the best case scenario, all the points below should fall on the blue line. 
+Plotting the actual values of your response variable vs the predicted values from the model is a great way to see how your model is doing and to compare different models. In the best case scenario, all the points below should fall on the blue line with slope 1 and intercept 0.  
 
 ```{r}
 augment(m2.include.wt) %>% 
@@ -285,9 +293,14 @@ augment(m2.include.wt) %>%
     
     geom_point(aes(col = cyl)) + 
     
+    # add 45 degree line: 
     geom_abline(slope = 1, 
                 intercept = 0, 
                 col = "blue") + 
+    
+    # make sure axes have same scale: 
+    scale_x_continuous(limits = c(10, 35)) + 
+    scale_y_continuous(limits = c(10, 35)) + 
     
     labs(title = "Actuals vs predictions", 
          subtitle = "Points above the line are being under-estimated \nPoints below the line are being over-estimated")
@@ -295,7 +308,7 @@ augment(m2.include.wt) %>%
 
 ```
 
-
+TODO: WE HAVE TO MOVE AWAY FROM RE-DOING AD HOCS EVERY TIME, INGESTING DATA, SPITTING OUT RESULTS, BUT NEVER LEARNING ANYTHING. WE NEED MODELS OF IMPORTANT PROCESSES. 
 
 
 
@@ -310,15 +323,9 @@ augment(m2.include.wt) %>%
 \  
  
 
-## Steps in regression modelling 
 
-1) Fit a model
-2) Diagnostics: any problems with the model? Is it suitable for the data? 
-3) Check overall significance and significance of individual predictors 
-4) Check goodness of fit 
-5) Fit another model; compare new model with old one, then go with the one that's better (there are algorithmic approaches for making these decisions)
 
-We'll look at the Advertising dataset from ISLR. 
+## Advertising dataset from ISLR. 
 
 ```{r}
 df2.advert <- read_csv(here::here("data", 
