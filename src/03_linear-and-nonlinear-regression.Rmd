@@ -175,6 +175,134 @@ Similarly, after accounting for weight, the difference between 6-cylinder cars a
 
 **This is important. Our conclusions may be biased or irrelevant if we don't systematically control for confounding variables.** E.g. an observed difference in ALOS between two nursing units is almost certainly not due the characteristics of the two nursing units alone - there will be multiple confounding variables such as age, diagnoses, etc.  
 
+
+### Using ```predict``` to interpret models 
+Once you fit a model, it exists independently of the data that you started with. This is a powerful abstraction - instead of carrying around raw data to describe a system, you can have a simple mathematical model that is easier to interpret and work with. 
+
+Although you will usually start by looking at regression coefficients, one of the best ways to interpet your model is to kick it and see what it does. In this context, kicking it refers to feeding it an artificial dataset that you create. 
+
+First, just try calling predict: 
+
+```{r}
+predict(m2.include.wt)
+```
+
+The result is a vector of numbers that gives you the predicted value for each row of the ```mtcars``` dataset. The ```broom::augment``` function is a good way to get these predicted values along with the input data. In the output below, ```.fitted``` gives the value that the regression model predicts, given values of cyl and wt. 
+
+```{r}
+augment(m2.include.wt) %>% 
+    select(mpg, cyl, wt, .fitted) %>% 
+    head(15) %>% 
+    
+    # don's use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+    
+```
+
+
+Let's see how the model uses ```wt``` and ```cyl``` values to predict mpg. We expect three parallel lines, one for each value of cyl, with slope equal to the coefficient of ```wt```. 
+
+
+```{r}
+df1.mtcars %>% 
+    mutate(pred.mpg = predict(m2.include.wt)) %>% 
+    
+    ggplot(aes(x = wt, 
+               y = pred.mpg)) + 
+    
+    geom_point(aes(col = cyl))
+
+```
+
+Yup, just what we expected. Now let's say you have some new data and you want to see what the model predicts for this new data. 
+
+```{r}
+# create new fake data: 
+
+df2.mtcars.fake <- data.frame(cyl = as.factor(c(4, 6, 8)), 
+                              wt = c(4, 2, 2))
+
+df2.mtcars.fake %>% 
+    
+    # don's use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+
+```
+
+Now pass the fake data to ```predict```: 
+
+```{r}
+# note the "newdata" argument in predict() below
+
+df2.mtcars.fake <- 
+    df2.mtcars.fake %>% 
+    mutate(pred.mpg = predict(m2.include.wt, 
+                              newdata = df2.mtcars.fake)) 
+
+# first point the points that were originally in the data:  
+df1.mtcars %>% 
+    mutate(pred.mpg = predict(m2.include.wt)) %>% 
+    
+    ggplot(aes(x = wt, 
+               y = pred.mpg)) + 
+    
+    geom_point(aes(col = cyl)) + 
+    
+    # then add the new points: 
+    geom_point(data = df2.mtcars.fake, 
+               aes(x = wt, 
+                   y = pred.mpg, 
+                   col = cyl), 
+               size = 5)
+    
+
+
+
+
+```
+
+
+### Plotting actuals vs predicted values to assess model performance
+
+Plotting the actual values of your response variable vs the predicted values from the model is a great way to see how your model is doing and to compare different models. In the best case scenario, all the points below should fall on the blue line. 
+
+```{r}
+augment(m2.include.wt) %>% 
+    
+    ggplot(aes(x = .fitted, 
+               y = mpg)) + 
+    
+    geom_point(aes(col = cyl)) + 
+    
+    geom_abline(slope = 1, 
+                intercept = 0, 
+                col = "blue") + 
+    
+    labs(title = "Actuals vs predictions", 
+         subtitle = "Points above the line are being under-estimated \nPoints below the line are being over-estimated")
+    
+
+```
+
+
+
+
+
+
+
+
+
 ***********************************************
 
 \  
