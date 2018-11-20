@@ -34,7 +34,8 @@ library(here)  # for simplifying folder references
 library(readr)  # reading and writing data files 
 library(GGally)  # extension to ggplot2
 library(ISLR)  # from the book Intro to Stat Learning with R 
-library(broom)  # for saving model outpus as dataframes 
+library(broom)  # for saving model outputs as dataframes 
+library(janitor)  # optional; for cleaning up dataframes 
 
 ```
 
@@ -104,7 +105,7 @@ mtcars %>%
     group_by(cyl) %>% 
     summarize(mean.mpg = mean(mpg)) %>% 
     
-    # don's use these lines; they're only for RMarkdown docs: 
+    # don't use these lines; they're only for RMarkdown docs: 
     kable() %>% 
     kable_styling(bootstrap_options = c("striped",
                                         "condensed", 
@@ -134,20 +135,75 @@ summary(m1.mpg.vs.cyl)
 
 ```
 
+
+### Functions from the package ```broom``` 
 The default output is hard to save, so we'll use the ```broom``` package to clean up and create a nice dataframe. 
+
+\  
+\  
+\  
+
+
+#### Using ```broom::tidy``` to get model coefficients 
 
 ```{r}
 #1 row per coefficient 
-broom::tidy(m1.mpg.vs.cyl)  
+broom::tidy(m1.mpg.vs.cyl) %>% 
+    
+    # don't use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+    
+    
 
-# 1 row per model; very useful when comparing lots of models
-broom::glance(m1.mpg.vs.cyl)  
-
-# 1 row per observation
-broom::augment(m1.mpg.vs.cyl) %>% head
 
 
 ```
+
+\  
+\  
+\  
+
+#### Using ```broom::glance``` to get one-line model summary 
+```{r}
+# 1 row per model; very useful when comparing lots of models
+broom::glance(m1.mpg.vs.cyl) %>% 
+    # don't use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+```
+
+\  
+\  
+\  
+
+#### Using ```broom::augment``` to get predicted values, residuals, etc. 
+```{r}
+# 1 row per observation
+broom::augment(m1.mpg.vs.cyl) %>% 
+    head %>% 
+    # don't use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+
+```
+
+
+
 
 ```{r}
 write_csv(broom::tidy(m1.mpg.vs.cyl), 
@@ -223,7 +279,7 @@ augment(m2.include.wt) %>%
     select(mpg, cyl, wt, .fitted) %>% 
     head(15) %>% 
     
-    # don's use these lines; they're only for RMarkdown docs: 
+    # don't use these lines; they're only for RMarkdown docs: 
     kable() %>% 
     kable_styling(bootstrap_options = c("striped",
                                         "condensed", 
@@ -258,7 +314,7 @@ df2.mtcars.fake <- data.frame(cyl = as.factor(c(4, 6, 8)),
 
 df2.mtcars.fake %>% 
     
-    # don's use these lines; they're only for RMarkdown docs: 
+    # don't use these lines; they're only for RMarkdown docs: 
     kable() %>% 
     kable_styling(bootstrap_options = c("striped",
                                         "condensed", 
@@ -326,7 +382,8 @@ augment(m2.include.wt) %>%
 
 ```
 
-TODO: WE HAVE TO MOVE AWAY FROM RE-DOING AD HOCS EVERY TIME, INGESTING DATA, SPITTING OUT RESULTS, BUT NEVER LEARNING ANYTHING. WE NEED MODELS OF IMPORTANT PROCESSES. 
+By building effective models of the way our operations work, we can encapsulate our knowledge succinctly in a form that can immediately answer a lot of important questions. That way, we don't have to keep spending time on surface-level ad hoc analyses that always start from scratch with the raw data ("Let's pull last 2 years of data, make a couple of graphs and send it back to the requester"). **That work has already been done during the modelling process, and does not need to be repeated every time.**   
+
 
 
 
@@ -354,29 +411,216 @@ TODO: WE HAVE TO MOVE AWAY FROM RE-DOING AD HOCS EVERY TIME, INGESTING DATA, SPI
 \  
 
 
-## Transforamtions of variables and interactions between variables 
+## Transformations of variables and interactions between variables 
+We worked with a log-transformation in the mini-exercise. Now let's look at interactions between variables. These examples are from ISLR.^[https://www-bcf.usc.edu/~gareth/ISL/]  
+
+
+
+### Interaction between 2 continuous variables.  
+
+First read in the data:  
 
 ```{r}
 df2.advert <- read_csv(here::here("data", 
                                   "Advertising.csv")) %>% 
-    select(-X1)
+    select(-X1) %>%  # drop unnecessary column 
+    clean_names  # from "janitor"" package
 
-str(df2.advert)
-summary(df2.advert)
-head(df2.advert)
+# str(df2.advert)
+# summary(df2.advert)
+# head(df2.advert)
 
 ```
 
 
+First we'll fit a model without an interaction: 
 
-## Boston house prices dataset 
+```{r}
+m3.advert.no.interaction <- lm(sales ~ tv + radio, 
+                               data = df2.advert)
+
+# summary(m3.advert.no.interaction)
+
+
+# look at model coefficients 
+tidy(m3.advert.no.interaction) %>% 
+    
+    # don't use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+# model summary: 
+glance(m3.advert.no.interaction) %>% 
+    
+    # don't use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+    
+    
+
+```
+
+```{r}
+# look at residual plots:
+par(mfrow = c(2, 2))  # plot 4 graphs on 1 screen
+plot(m3.advert.no.interaction)
+
+```
+
+Those curved shapes on the top-left and bottom-left plots are a little worrying. Looks like we're under-predicting sales both at the lower end of the range and the higher end. 
+
+What if we add an interaction term? We see that the effect of tv advertising on sales is *dependent on the level of radio advertising*.  
+
+```{r}
+m4.advert.with.interact <- lm(sales ~ tv + 
+                                  radio + 
+                                  tv*radio,  # interaction term
+                              data = df2.advert)
+
+# summary(m4.advert.with.interact)
+
+
+# look at model coefficients 
+tidy(m4.advert.with.interact) %>% 
+    
+    # don't use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+# model summary: 
+glance(m4.advert.with.interact) %>% 
+    
+    # don't use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+
+# residual plots 
+par(mfrow = c(2, 2))  # plot 4 graphs on 1 screen
+plot(m4.advert.with.interact)
+
+```
+
+### Mini-exercise: explore interaction with ```predict``` 
+Set up a fake dataset to explore how the interaction between tv and radio advertising works. For example, try creating a dataframe with four rows: 
+
+* Rows 1 and 2: keep tv at a fixed value, but create two values of radio that differ by 1 unit. 
+* Rows 3 and 4: Change the value of tv, but keep it constant across Rows 3 and 4. Leave the values of radio as in the previous two rows. 
+
+Then pass this fake data to the ```predict``` function. K
+
+
+\  
+\  
+\  
+
+### Interaction between continuous and categorical variables 
+We'll use the ```Credit``` dataset. The goal is to predict the balance on a customer's credit card.  
+
+```{r}
+df3.credit <- Credit %>% 
+    clean_names()
+
+# str(df3.credit)
+# summary(df3.credit)
+head(df3.credit) %>% 
+    
+    # don't use these lines; they're only for RMarkdown docs: 
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+    
+
+```
+
+
+First fit a model with only income and student. 
+```{r}
+m5.credit <- lm(balance ~ income + student, 
+                data = df3.credit)
+
+# summary(m5.credit)
+
+df3.credit %>%  
+    mutate(pred.balance = predict(m5.credit)) %>% 
+    
+    ggplot(aes(x = income, 
+               y = pred.balance)) + 
+    
+    geom_point(aes(col = student))
+
+
+```
+
+Does it make sense that the effect of additional income is the same whether or not you're a student? Possibly not. Let's fit a more general model that does allow for the slope of the 2 lines to differ. 
+
 
 ```{r}
 
+m6.credit.interact <- lm(balance ~ income +
+                             student + 
+                             income*student,  # interaction term
+                         data = df3.credit)
+
+summary(m6.credit.interact)
+
+df3.credit %>%  
+    mutate(pred.balance = predict(m6.credit.interact)) %>% 
+    
+    ggplot(aes(x = income, 
+               y = pred.balance)) + 
+    
+    geom_point(aes(col = student))
+
+
+
 ```
 
+Note that adjusted R-squared and Residual standard error are pretty much exactly the same after adding the interaction, and the interaction is not significant. In this case, we should exclude the interaction from our final model. 
 
 
 
+
+
+***********************************************
+
+\  
+\  
+\  
+
+
+## Boston house prices dataset 
+Use the Boston dataset from the ISLR package. Try to find the best model to predict median house value (```medv```) using the 13 other variables in the dataset. 
+
+
+
+***********************************************
+
+\  
+\  
+\  
+
+
+
+## Footnotes 
 
 
