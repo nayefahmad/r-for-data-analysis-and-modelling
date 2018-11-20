@@ -54,72 +54,72 @@ google_trends_df_tbl <- google_trends_df %>%
 
 # Method 1: STL + IQR Anomaly Detection
 google_trends_df_tbl %>%   
-  time_decompose(hits,
-                 method = "stl",
-                 trend = "1 year") %>%  # todo: what setting to use? 
-  
-  anomalize(remainder,
-            method = "iqr") %>%
-  time_recompose() %>%
-  
-  # Anomaly Visualization
-  plot_anomalies(time_recomposed = TRUE) +
-  labs(title = "Google Trends Data - STL + IQR Method",
-       x="Time",
-       y="Relative Interest", 
-       subtitle = "CA-BC search volume for 'Fentanyl' between Jan'04-Nov'18")
+    time_decompose(hits,
+                   method = "stl",
+                   trend = "1 year") %>%  # todo: what setting to use? 
+    
+    anomalize(remainder,
+              method = "iqr") %>%
+    time_recompose() %>%
+    
+    # Anomaly Visualization
+    plot_anomalies(time_recomposed = TRUE) +
+    labs(title = "Google Trends Data - STL + IQR Method",
+         x="Time",
+         y="Relative Interest", 
+         subtitle = "CA-BC search volume for 'Fentanyl' between Jan'04-Nov'18")
 
 
 
 
 # Method 2: Twitter + IQR Anomaly Detection
 google_trends_df_tbl %>%   
-  time_decompose(hits,
-                 method = "twitter",
-                 trend = "1 year"
-  ) %>%
-  anomalize(remainder, method = "iqr") %>%
-  time_recompose() %>%
-  
-  # Anomaly Visualization
-  plot_anomalies(time_recomposed = TRUE) +
-  labs(title = "Google Trends Data - Twitter + IQR Method",
-       x="Time",
-       y="Relative Interest", 
-       subtitle = "CA-BC search volume for 'Fentanyl' between Jan'04-Nov'18"
-  )
+    time_decompose(hits,
+                   method = "twitter",
+                   trend = "1 year"
+    ) %>%
+    anomalize(remainder, method = "iqr") %>%
+    time_recompose() %>%
+    
+    # Anomaly Visualization
+    plot_anomalies(time_recomposed = TRUE) +
+    labs(title = "Google Trends Data - Twitter + IQR Method",
+         x="Time",
+         y="Relative Interest", 
+         subtitle = "CA-BC search volume for 'Fentanyl' between Jan'04-Nov'18"
+    )
 
 
 
 # Method 3: Twitter and GESD
 google_trends_df_tbl %>%   
-  time_decompose(hits,
-                 method = "twitter",
-                 trend = "1 year") %>%
-  anomalize(remainder, method = "gesd") %>%
-  time_recompose() %>%
-  
-  # Anomaly Visualization
-  plot_anomalies(time_recomposed = TRUE) +
-      
-  # scale_x_date(breaks = c("2005-01-01", 
-  #                         "2006-01-01") %>% as.Date) + 
-       
-  labs(title = "Google Trends Data - Twitter + GESD Method",
-       x="Time",
-       y="Relative Interest",
-       subtitle = "CA-BC search volume for 'Fentanyl' between Jan'04-Nov'18"
-  )
+    time_decompose(hits,
+                   method = "twitter",
+                   trend = "1 year") %>%
+    anomalize(remainder, method = "gesd") %>%
+    time_recompose() %>%
+    
+    # Anomaly Visualization
+    plot_anomalies(time_recomposed = TRUE) +
+    
+    # scale_x_date(breaks = c("2005-01-01", 
+    #                         "2006-01-01") %>% as.Date) + 
+    
+    labs(title = "Google Trends Data - Twitter + GESD Method",
+         x="Time",
+         y="Relative Interest",
+         subtitle = "CA-BC search volume for 'Fentanyl' between Jan'04-Nov'18"
+    )
 
 
 
 # look at how anomaly detection algorithm works
 google_trends_df_tbl %>% 
-  time_decompose(hits, method = "stl", 
-                 frequency = "auto",
-                 trend = "auto") %>%
-  anomalize(remainder, 
-            method = "iqr", 
-            alpha = 0.04,
-            max_anoms = 0.2) %>%
-  plot_anomaly_decomposition() 
+    time_decompose(hits, method = "stl", 
+                   frequency = "auto",
+                   trend = "auto") %>%
+    anomalize(remainder, 
+              method = "iqr", 
+              alpha = 0.04,
+              max_anoms = 0.2) %>%
+    plot_anomaly_decomposition() 
