@@ -137,14 +137,15 @@ summary(m1.mpg.vs.cyl)
 The default output is hard to save, so we'll use the ```broom``` package to clean up and create a nice dataframe. 
 
 ```{r}
-broom::tidy(m1.mpg.vs.cyl)  
 #1 row per coefficient 
+broom::tidy(m1.mpg.vs.cyl)  
 
-broom::glance(m1.mpg.vs.cyl)  
 # 1 row per model; very useful when comparing lots of models
+broom::glance(m1.mpg.vs.cyl)  
 
-broom::augment(m1.mpg.vs.cyl) %>% head
 # 1 row per observation
+broom::augment(m1.mpg.vs.cyl) %>% head
+
 
 ```
 
@@ -155,7 +156,9 @@ write_csv(broom::tidy(m1.mpg.vs.cyl),
                "mtcars-regression.csv"))
 ```
 
-
+\  
+\  
+\  
 
 
 ### Interpreting the change in the mean mpg
@@ -182,6 +185,24 @@ Note that the expected difference in mpg between 4-cylinder and 6-cylinder cars 
 Similarly, after accounting for weight, the difference between 6-cylinder cars and 8-cylinder cars is **`r 6.0709-4.2556`** instead of `r 19.7429 - 15.1000`
 
 **This is important. Our conclusions may be biased or irrelevant if we don't systematically control for confounding variables.** E.g. an observed difference in ALOS between two nursing units is almost certainly not due the characteristics of the two nursing units alone - there will be multiple confounding variables such as age, diagnoses, etc.  
+
+
+#### Diagnostic plots 
+Residuals from regression should be white noise with mean zero. This tells you that you have captured all the *systematic* structure in the relationship between the response and the predictor variables, leaving only *randomness/noise*. See [here](http://data.library.virginia.edu/diagnostic-plots/) for more details on interpreting these plots. 
+
+
+```{r}
+# display 4 plots in a 2 by 2 grid: 
+par(mfrow = c(2, 2))
+
+plot(m2.include.wt)
+
+
+```
+
+\  
+\  
+\  
 
 
 ### Using ```predict``` to interpret models 
@@ -273,9 +294,6 @@ df1.mtcars %>%
                    y = pred.mpg, 
                    col = cyl), 
                size = 5)
-    
-
-
 
 
 ```
@@ -322,10 +340,21 @@ TODO: WE HAVE TO MOVE AWAY FROM RE-DOING AD HOCS EVERY TIME, INGESTING DATA, SPI
 \  
 \  
  
+## Mini-Exercise: GDP of US Metro areas 
+
+* Use the ```us-msa-gdp-and-population.csv``` dataset to find the relationship between GDP (in millions of USD) and population for US metropolitan statistical areas (MSAs). 
+* How can you tell whether a particular MSA is under-performing or over-performing, relative to its population size? 
+* Identify the top 3 over-performing MSAs. 
 
 
+***********************************************
 
-## Advertising dataset from ISLR. 
+\  
+\  
+\  
+
+
+## Transforamtions of variables and interactions between variables 
 
 ```{r}
 df2.advert <- read_csv(here::here("data", 
@@ -340,7 +369,7 @@ head(df2.advert)
 
 
 
-### 
+## Boston house prices dataset 
 
 ```{r}
 
