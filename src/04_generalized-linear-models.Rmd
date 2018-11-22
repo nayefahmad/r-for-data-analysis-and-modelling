@@ -4,7 +4,8 @@ author: "Nayef Ahmad - VCH Decision Support"
 date: "September 26, 2018"
 output: 
     html_document: 
-      toc: yes
+        toc: yes
+        code_folding: show
 ---
 
 ```{r setup, include=FALSE}
@@ -26,15 +27,31 @@ library("kableExtra")
 ## Extending the linear model using link functions 
 The linear models that we have looked at so far have 2 basic components. Recall the Boston house prices model we worked on last session. The components of the model we built were: 
 
-1. Random component: the y-variable 
-2. Linear predicto: the x-variables and the coefficients associated with them (betas) 
+1. *Random component*: the y-variable 
+2. *Linear predictor*: the x-variables and the coefficients associated with them
 
 We're now going to move to a more general type of model, which has three components: 
+
 1. Random component 
 2. Linear predictor
-3. Link function 
+3. *Link function* 
 
-Todo: image of link function, etc. 
+**Models with these three components are called generalized linear models (GLMs).**^[Actually, ordinary linear regression is also a specific case of a GLM, where the link function is just the identity function, $f(x) = x$] 
+
+The link function is necessary because in certain circumstances it doesn't make sense to directly connect the linear predictor with the Y-variable - we have to first transform it in some way. 
+
+todo: image of link function 
+
+
+### Common types of GLMs 
+By considering different types of distributions for the response variable, and different link functions, we can study several different GLMs. Two of the most common ones are: 
+
+1. **Logistic regression**: when the response is a binary (yes/no) variable. The model allows us to understand which predictor variables increase/decrease the probability of "Yes", and by what percentage. *E.g. Will this patient be readmitted?* 
+2. **Poisson regression**: when the response is a discrete count variable - i.e. cannot take decimal values. *E.g. How many comorbities is this patient likely to have?*    
+
+In this session we'll be covering logistic regression. In R, the mechanics of fitting various GLMs are basically the same (however, interpreting the models and diagnosing problems will require you to understand how the models work in each case).  
+
+
 
 ***********************************
 
@@ -43,7 +60,7 @@ Todo: image of link function, etc.
 \  
 
 ## Load the packages for the current session
-```{r message = FALSE}
+```{r }
 library("dplyr")  # for manipulating data frames 
 library("ggplot2")  # for data viz
 library("here")  # for simplifying folder references 
@@ -56,43 +73,26 @@ library("ISLR")  # package from the book Intro to Stat Learning
 *******************
 
 ## Examining the Default dataset
-The default dataset is built into the ISLR package. 
+The default dataset is built into the ```ISLR``` package. Much of this example is drawn from [here](http://uc-r.github.io/logistic_regression#req) - it's a good tutorial, and I don't have too much to add to it, to be honest. 
+
+
 
 ```{r}
 df1.default.dataset <- Default  # rename for convenience 
 
-str(df1.default.dataset)
+# str(df1.default.dataset)
 
-levels(df1.default.dataset$student)  # No is the first level, 1
-levels(df1.default.dataset$default)  # No is the first level, 1
+# levels(df1.default.dataset$student)  # No is the first level, 1
 
 ```
 
-#### Quick summaries 
-```{r}
-summary(df1.default.dataset)
-```
 
-```{r}
-head(df1.default.dataset) %>% 
-    # don't use the following lines; they're specifically for Rmarkdown files
-    kable() %>% 
-    kable_styling(bootstrap_options = c("striped",
-                                        "condensed", 
-                                        "responsive"), 
-                  full_width = FALSE, 
-                  position = "left")
-```
-
-
-#### Pairs plot 
+#### Exploratory data analysis 
 
 ```{r}
 p1.pairs <- df1.default.dataset %>% 
     ggpairs(); p1.pairs
 
-
-    
 ```
 
 There's a lot of interesting things to see here. 
@@ -138,3 +138,11 @@ df1.default.dataset %>%
 
 ```
 
+
+
+
+
+
+***************************************************
+
+## Footnotes 
