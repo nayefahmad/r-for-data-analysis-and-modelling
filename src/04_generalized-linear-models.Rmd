@@ -24,6 +24,18 @@ library("kableExtra")
 ```
 
 
+## Load the packages for the current session
+```{r }
+library("dplyr")  # for manipulating data frames 
+library("ggplot2")  # for data viz
+library("here")  # for simplifying folder references 
+library("readr")  # reading and writing data files 
+library("GGally")  # extension to ggplot2
+library("ISLR")  # package from the book Intro to Stat Learning 
+
+```
+
+
 ## Extending the linear model using link functions 
 The linear models that we have looked at so far have 2 basic components. Recall the Boston house prices model we worked on last session. The components of the model we built were: 
 
@@ -40,8 +52,27 @@ We're now going to move to a more general type of model, which has three compone
 
 The link function is necessary because in certain circumstances it doesn't make sense to directly connect the linear predictor with the Y-variable - we have to first transform it in some way. 
 
-todo: image of link function 
+```{r include = FALSE }
 
+image.path <- here("docs", 
+                   "logistic-link-function.jpg")
+
+```
+
+
+\  
+\  
+\  
+\  
+
+![Logistic link function](`r image.path`)  
+
+
+\  
+\  
+\  
+\  
+\  
 
 ### Common types of GLMs 
 By considering different types of distributions for the response variable, and different link functions, we can study several different GLMs. Two of the most common ones are: 
@@ -51,7 +82,7 @@ By considering different types of distributions for the response variable, and d
 
 In this session we'll be covering logistic regression. In R, the mechanics of fitting various GLMs are basically the same (however, interpreting the models and diagnosing problems will require you to understand how the models work in each case).  
 
-
+Logistic regression is [widely used in classification problems in healthcare](https://svn.bmj.com/content/2/4/230) and in some circumstances [performs as well as or better than "sexier" models](http://www.fharrell.com/post/medml/) like deep learning.  
 
 ***********************************
 
@@ -59,21 +90,11 @@ In this session we'll be covering logistic regression. In R, the mechanics of fi
 \  
 \  
 
-## Load the packages for the current session
-```{r }
-library("dplyr")  # for manipulating data frames 
-library("ggplot2")  # for data viz
-library("here")  # for simplifying folder references 
-library("readr")  # reading and writing data files 
-library("GGally")  # extension to ggplot2
-library("ISLR")  # package from the book Intro to Stat Learning 
-
-```
-
-*******************
 
 ## Examining the Default dataset
 The default dataset is built into the ```ISLR``` package. Much of this example is drawn from [here](http://uc-r.github.io/logistic_regression#req) - it's a good tutorial, and I don't have too much to add to it, to be honest. 
+
+**Our goal is to find the probability that a certain credit card holder will default, given their income, balance, student status, etc.**
 
 
 
@@ -95,40 +116,23 @@ p1.pairs <- df1.default.dataset %>%
 
 ```
 
-There's a lot of interesting things to see here. 
-
-1. Defaults are a small proportion of total accounts, for both students and non-students. Todo: how different are the proportions? 
-2. Non-students have much higher income than students (no surprise). They also have slightly higher credit balances. 
-3. todo: ...
-
-
-
-
-
 ```{r}
 
-df1.default.dataset %>% 
-    group_by(student) %>% 
-    summarize(avg.bal = mean(balance), 
-              avg.inc = mean(income), 
-              num = n())
-
-```
-
-
-## A terrible classifier: just use averages 
-
-```{r}
-
-df1.default.dataset %>% 
+# split by default category: Yes vs No
+df2.summary <- 
+    df1.default.dataset %>% 
     group_by(default) %>% 
     summarize(avg.bal = mean(balance), 
               avg.inc = mean(income), 
+              
+              # dplyr::n() is used to count rows 
               num.cases = n(), 
               num.student = sum(student=="Yes"), 
-              perc.student = round(100*sum(student=="Yes")/n(), 2)) %>% 
+              perc.student = round(100*sum(student=="Yes")/n(), 2))  
     
-    
+
+# print result: 
+df2.summary %>%     
     kable() %>% 
     kable_styling(bootstrap_options = c("striped",
                                         "condensed", 
@@ -137,6 +141,77 @@ df1.default.dataset %>%
                   position = "left")
 
 ```
+
+
+```{r}
+
+# split by Student category: Yes vs No
+df1.default.dataset %>% 
+    group_by(student) %>% 
+    summarize(avg.bal = mean(balance), 
+              avg.inc = mean(income), 
+              num = n(), 
+              perc.default = round(100*sum(default=="Yes")/n(), 2)) %>% 
+    
+    # don't use these lines; only for Rmarkdown
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+    
+    
+
+```
+
+
+
+
+There's a lot of interesting things to see here. 
+
+1. Defaults are a small proportion of total accounts, for both students and non-students.
+2. Non-students have much higher income than students (no surprise). They also have slightly higher credit balances.
+3. Overall, proportion of students in the sample is **`r filter(df1.default.dataset, student == "Yes") %>% nrow/nrow(df1.default.dataset)`**. Among the defaults, proportion of students is **`r (df2.summary %>% select(perc.student) %>% slice(2) %>% as.numeric)/100`**. **Clearly, this shows that students are riskier than non-students - right?**
+
+Let's create some models to examine the probability of default, given the characteristics of each customer. 
+
+\  
+\   
+\  
+
+
+## What if we just try linear regression? 
+Let's start by examining the relationship between default and credit card balance. 
+
+```{r}
+# m1.linear.regression <- lm(as.numeric(default) ~ balance, 
+#                            data = df1.default.dataset)
+
+# summary(m1.linear.regression)
+
+# plot result of model: 
+df1.default.dataset %>% 
+    mutate(is.default.numeric = ifelse(default == "Yes", 
+                                1, 
+                                0)) %>% 
+    
+    ggplot(aes(x = balance, 
+               y = is.default.numeric)) + 
+    geom_point() + 
+    geom_smooth(method = "lm") + 
+    
+    labs(title = "Ordinarly linear regression doesn't really make sense when you have \na binary response", 
+         subtitle = "We want to interpret the regression line as 'Probability of default', but notice that we're seeing negative \nvalues at the far left.")
+
+
+
+```
+
+
+
+
+
 
 
 
