@@ -49,7 +49,7 @@ Have you ever been asked to ...
 
 If you answered yes to all, regression models may be right for you. 
 
-**A regression models is a quantitative theory of how the mean/expected value of one variable (Y) changes as the values of other variables (X1, x2, ...) change.**
+**A regression model is a quantitative explanation of how the mean/expected value of one variable (Y) changes as the values of other variables (X1, x2, ...) change.**
 
 Remember, all models are wrong but some are useful.^[https://en.wikipedia.org/wiki/All_models_are_wrong] Calculating an average was considered cutting-edge modelling in the 16th century.^[https://en.wikipedia.org/wiki/Average#Origin] In a sense, the average is "wrong" because no single data point might actually take the average value.^[https://www.gse.harvard.edu/news/ed/15/08/beyond-average]  
 
@@ -242,6 +242,10 @@ Similarly, after accounting for weight, the difference between 6-cylinder cars a
 
 **This is important. Our conclusions may be biased or irrelevant if we don't systematically control for confounding variables.** E.g. an observed difference in ALOS between two nursing units is almost certainly not due the characteristics of the two nursing units alone - there will be multiple confounding variables such as age, diagnoses, etc.  
 
+
+\  
+\  
+\  
 
 #### Diagnostic plots 
 Residuals from regression should be white noise with mean zero. This tells you that you have captured all the *systematic* structure in the relationship between the response and the predictor variables, leaving only *randomness/noise*. See [here](http://data.library.virginia.edu/diagnostic-plots/) for more details on interpreting these plots. 
