@@ -26,12 +26,14 @@ library("kableExtra")
 
 ## Load the packages for the current session
 ```{r }
-library("dplyr")  # for manipulating data frames 
-library("ggplot2")  # for data viz
-library("here")  # for simplifying folder references 
-library("readr")  # reading and writing data files 
-library("GGally")  # extension to ggplot2
-library("ISLR")  # package from the book Intro to Stat Learning 
+library(dplyr)  # for manipulating data frames 
+library(ggplot2)  # for data viz
+library(here)  # for simplifying folder references 
+library(readr)  # reading and writing data files 
+library(GGally)  # extension to ggplot2
+library(ISLR)  # package from the book Intro to Stat Learning 
+library(broom)  # for cleaning up model results 
+library(tidyr)  # for tidying data
 
 ```
 
@@ -108,7 +110,7 @@ df1.default.dataset <- Default  # rename for convenience
 ```
 
 
-#### Exploratory data analysis 
+### Exploratory data analysis 
 
 ```{r}
 p1.pairs <- df1.default.dataset %>% 
@@ -181,7 +183,7 @@ Let's create some models to examine the probability of default, given the charac
 \  
 
 
-## What if we just try linear regression? 
+### What if we just try linear regression? 
 Let's start by examining the relationship between default and credit card balance. 
 
 ```{r}
@@ -198,7 +200,7 @@ df1.default.dataset %>%
     
     ggplot(aes(x = balance, 
                y = is.default.numeric)) + 
-    geom_point() + 
+    geom_point(alpha = 0.2) + 
     geom_smooth(method = "lm") + 
     
     labs(title = "Ordinarly linear regression doesn't really make sense when you have \na binary response", 
@@ -209,12 +211,219 @@ df1.default.dataset %>%
 ```
 
 
+### Fitting a logistic regression model with ```glm```
+
+```{r}
+m2.logistic <- glm(default ~ balance, 
+                   # specify which specific GLM you want using "family": 
+                   family = "binomial", 
+                   data = df1.default.dataset)
+
+summary(m2.logistic)
+
+```
+
+Unlike in linear regression, there is no R-squared stat here. Instead, we use *residual deviance*. Lower deviance is better.  
+
+### Interpreting coefficients
+Let's extract coefficients using ```broom::tidy```. Note that the coefficients are given in terms of log odds, which are hard to interpret, so we convert them to odds factors, which are *slightly* easier to interpret.   
+
+
+```{r}
+tidy(m2.logistic) %>% 
+    mutate(estimate.odds.factor = exp(estimate)) %>% 
+    
+    # rearrange column order: 
+    select(term, 
+           estimate, 
+           estimate.odds.factor, 
+           everything()) %>% 
+    
+    
+    # don't use these lines; only for Rmarkdown
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+    
+    
+    
+
+
+```
+
+Every unit increase in balance causes the [odds](https://en.wikipedia.org/wiki/Odds) of default to increase by a **factor** of `r coef(m2.logistic)[2]`. **If the odds factor is greater than 1, then this variable is associated with an increase in the probability of default.** 
+
+### Interpreting the model with fake data
+Let's create a dataset with three rows, using the 25th, 50th, 75th, 90th and 99th percentile values of balance. 
+
+```{r}
+
+# use quantile( ) to get percentiles 
+balance.quantiles <- df1.default.dataset %>% 
+    pull(balance) %>%
+    quantile(probs = c(.25, .50, .75, .90, .99))
+
+df4.fake.data <- data.frame(balance = balance.quantiles)
+
+
+# view result: 
+df4.fake.data %>% 
+    
+    # don't use these lines; only for Rmarkdown
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+    
+    
+```
+
+Now let's use ```predict``` to see what probability our logistic model predicts for customers at these three percentiles of balance. 
+
+```{r}
+# in order to get output in terms of proportions (instead of log odds), use the type = "response" argument 
+
+(predict(m2.logistic, 
+        newdata = df4.fake.data, 
+        
+         
+        type = "response")) * 100  # convert to probabilities 
+    
+
+```
+
+\  
+\  
+\  
+
+Conclusions: 
+
+* Below the 50th percentile of balance, there is a very small probability of default. 
+* The increase in probability from 25th to 75th percentile is very small, but the increase from 90th to 95th is quite large. **Therefore, the effect of a single unit increase in balance is not uniform in its effect on probability of default.**
+
+### Plotting the model
+
+```{r}
+augment(m2.logistic) %>% 
+    # create an ID column, change fitted value to probability, etc: 
+    mutate(id = row_number(), 
+           default.numeric = ifelse(default == "Yes", 
+                                    1, 
+                                    0), 
+           predicted.prob = m2.logistic$family$linkinv(.fitted)) %>% 
+    # ^^ linkinv is used to invert the logistic function to get probabilities instead of log odds 
+    
+    # select columns for plotting: 
+    select(id, 
+           default.numeric, 
+           balance, 
+           predicted.prob) %>% 
+    
+    # reshape the data: 
+    gather(key = "variable", 
+           value = "value", 
+           -c(id, balance)) %>% 
+    
+    
+    # now plot it: 
+    ggplot(aes(x = balance, 
+               y = value, 
+               group = variable, 
+               colour = variable)) +
+    geom_point(alpha = 0.2)
 
 
 
+```
+
+### Alternate way of plotting
+It's kind of fun to be able to see the predictions for your actual data points, so that's the approach I showed above. In practice, you'll usually just let ggplot plot a smooth curve, like this: 
+
+```{r}
+df1.default.dataset %>% 
+    mutate(is.default.numeric = ifelse(default == "Yes", 
+                                1, 
+                                0)) %>% 
+    
+    ggplot(aes(x = balance, 
+               y = is.default.numeric)) + 
+    geom_point(alpha = 0.2) + 
+    geom_smooth(method = "glm", 
+                method.args = list(family = "binomial"))
+
+```
 
 
+### Adding ```student``` as a predictor 
+First we'll fit a new model. Then we'll check whether the new model really is better. Finally we'll plot the new model's predictions. 
 
+```{r}
+# fit logistic model with 2 predictors: 
+m3.logistic.with.student <- 
+    glm(default ~ balance + student, 
+        data = df1.default.dataset, 
+        family = "binomial")
+
+summary(m3.logistic.with.student)
+
+
+# examine coefficients: 
+tidy(m3.logistic.with.student) %>% 
+    mutate(estimate.odds.factor = exp(estimate)) %>% 
+    
+    # rearrange column order: 
+    select(term, 
+           estimate, 
+           estimate.odds.factor, 
+           everything()) %>% 
+    
+    
+    # don't use these lines; only for Rmarkdown
+    kable() %>% 
+    kable_styling(bootstrap_options = c("striped",
+                                        "condensed", 
+                                        "responsive"), 
+                  full_width = FALSE, 
+                  position = "left")
+
+
+```
+
+Huh. The odds factor for ```student``` after controlling for ```balance``` is less than one: **for the same balance, a student is less likely to default than a non-student. This result is the opposite of what we concluded after a naive analysis ** 
+
+Note that deviance is lower for this model. But is it significantly lower? 
+
+```{r}
+anova(m2.logistic, 
+      m3.logistic.with.student, 
+      test = "Chisq")   
+
+
+```
+
+Yes, it is significantly lower. 
+
+### Plotting the model with ```balance``` and ```student``` as predictors
+```{r}
+df1.default.dataset %>% 
+    mutate(is.default.numeric = ifelse(default == "Yes", 
+                                1, 
+                                0)) %>% 
+    
+    ggplot(aes(x = balance, 
+               y = is.default.numeric, 
+               group = student, 
+               colour = student)) + 
+    geom_point(alpha = 0.2) + 
+    geom_smooth(method = "glm", 
+                method.args = list(family = "binomial"))
+
+```
 
 
 
